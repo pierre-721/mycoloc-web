@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Évènements</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --text:#fff;
+      --muted:#b3b3b3;
+      --accent:#ff2d55;
+      --good:#30d158;
+      --warn:#ffd60a;
+      --bad:#ff453a;
+      --radius:18px;
+      --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,45,85,.15), transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(90,200,250,.10), transparent 45%),
+        var(--bg);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:22px 16px 40px}
+
+    /* Top bar */
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:var(--blur);
+      background:linear-gradient(to bottom,rgba(11,11,15,.85),rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      margin:-22px -16px 18px;
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .topbar .left{display:flex;flex-direction:column;gap:2px}
+    .topbar h1{margin:0;font-size:18px;font-weight:700}
+    .topbar .sub{font-size:12px;color:var(--muted)}
+    .topbar .right{display:flex;gap:10px;align-items:center}
+    .btn{
+      background:transparent;border:1px solid var(--border);
+      color:var(--text);border-radius:999px;
+      padding:8px 12px;cursor:pointer;font-weight:600;font-size:13px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+
+    .grid{display:grid; gap:14px; grid-template-columns: 1fr .9fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.45)
+    }
+    .card h2{margin:0 0 10px;font-size:14px}
+
+    .form{display:flex;flex-direction:column;gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .label{font-size:12px;color:var(--muted)}
+    input, textarea{
+      padding:12px;border-radius:12px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      color:var(--text);font-size:13px;
+      outline:none;
+    }
+    input:focus, textarea:focus{
+      border-color: var(--accent);
+      background: rgba(255,255,255,.12);
+    }
+    textarea{min-height:92px; resize: vertical}
+
+    .row{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+      padding:12px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08)
+    }
+    .row + .row{margin-top:10px}
+    .title{font-size:14px;font-weight:700}
+    .meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .badge{
+      font-size:11px;font-weight:800;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .badge.good{border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.12)}
+    .badge.warn{border-color: rgba(255,214,10,.25); background: rgba(255,214,10,.12)}
+    .badge.bad{border-color: rgba(255,69,58,.25); background: rgba(255,69,58,.12)}
+
+    .empty{
+      padding:14px;text-align:center;
+      color:var(--muted);font-size:13px;
+      border-radius:14px;
+      border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+    }
+
+    .mini-actions{display:flex;gap:10px;align-items:center;margin-top:10px}
+    .link{
+      background:none;border:none;color:var(--muted);
+      cursor:pointer;font-size:13px;padding:0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78);
+      backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none;
+      max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="left">
+    <h1>📅 Évènements</h1>
+    <div class="sub" id="sub">Chargement…</div>
+  </div>
+  <div class="right">
+    <button class="btn" onclick="location.href='home.html'">Retour</button>
+    <button class="btn" id="refreshBtn">Actualiser</button>
+    <button class="btn" id="themeBtn" type="button">☀️ Clair</button>
+    <button class="btn primary" id="scrollToCreate">Créer</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="grid">
+
+    <!-- Agenda -->
+    <div class="card">
+      <h2>Agenda</h2>
+      <div id="agenda"></div>
+    </div>
+
+    <!-- Create -->
+    <div class="card" id="createCard">
+      <h2>Créer un évènement</h2>
+
+      <div class="form">
+        <div class="field">
+          <div class="label">Titre</div>
+          <input id="title" placeholder="Ex: Soirée jeux / Courses / Ménage..." />
+        </div>
+
+        <div class="field">
+          <div class="label">Début</div>
+          <input id="startsAt" type="datetime-local" />
+          <div class="label" style="opacity:.9">Astuce : le fuseau sera celui de votre navigateur.</div>
+        </div>
+
+        <div class="field">
+          <div class="label">Lieu (optionnel)</div>
+          <input id="location" placeholder="Ex: Appartement / Carrefour / Chez Paul..." />
+        </div>
+
+        <div class="field">
+          <div class="label">Détails (optionnel)</div>
+          <textarea id="details" placeholder="Infos utiles, consignes, qui apporte quoi..."></textarea>
+        </div>
+
+        <button class="btn primary" id="createBtn">Créer l’évènement</button>
+
+        <div class="mini-actions">
+          <button class="link" id="fillExample">Remplir un exemple</button>
+          <button class="link" id="clearForm">Vider</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /***********************
+   * 🔧 CONFIG SUPABASE  *
+   ***********************/
+  const sb = window.supabase.createClient(
+    'https://thcsbtvbybhmmiabovjc.supabase.co',
+    'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+  )
+
+  const $ = (id) => document.getElementById(id)
+
+  function toast(message){
+    const t = $('toast')
+    t.textContent = message
+    t.style.display = 'block'
+    clearTimeout(window.__toastTimer)
+    window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+  }
+
+  function esc(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;")
+  }
+
+  function fmtDateTime(iso){
+    if(!iso) return '—'
+    const d = new Date(iso)
+    return d.toLocaleString('fr-FR', { weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+  }
+
+  function badgeForEvent(startsAtIso){
+    const now = Date.now()
+    const t = new Date(startsAtIso).getTime()
+    if (isNaN(t)) return { text:'—', kind:'' }
+    const diffH = (t - now) / (1000*60*60)
+    if (diffH < 0) return { text:'Passé', kind:'bad' }
+    if (diffH <= 24) return { text:'24h', kind:'warn' }
+    return { text:'À venir', kind:'good' }
+  }
+
+  let SESSION = null
+  let HOUSEHOLD_ID = null
+
+  async function guard(){
+    const { data } = await sb.auth.getSession()
+    SESSION = data.session
+    if(!SESSION) { location.href='index.html'; return false }
+    return true
+  }
+
+  async function loadHousehold(){
+    // household_members -> household_id + households.name
+    const { data, error } = await sb
+      .from('household_members')
+      .select('household_id, households(name)')
+      .eq('user_id', SESSION.user.id)
+      .order('created_at', { ascending:true })
+      .limit(1)
+      .single()
+
+    if(error){
+      console.error(error)
+      $('sub').textContent = "Impossible de charger la colocation (RLS ?)"
+      return
+    }
+    HOUSEHOLD_ID = data.household_id
+    $('sub').textContent = data.households?.name ? `Colocation : ${data.households.name}` : "Colocation"
+  }
+
+  async function loadAgenda(){
+    const agenda = $('agenda')
+    agenda.innerHTML = `<div class="empty">Chargement…</div>`
+
+    if(!HOUSEHOLD_ID){
+      agenda.innerHTML = `<div class="empty">Aucune colocation.</div>`
+      return
+    }
+
+    const nowIso = new Date().toISOString()
+
+    // On charge d'abord les prochains évènements
+    const { data: upcoming, error: e1 } = await sb
+      .from('events')
+      .select('id, title, starts_at, location, details, created_at')
+      .eq('household_id', HOUSEHOLD_ID)
+      .gte('starts_at', nowIso)
+      .order('starts_at', { ascending:true })
+      .limit(30)
+
+    // Et on charge ensuite les 10 derniers passés (utile pour contexte)
+    const { data: past, error: e2 } = await sb
+      .from('events')
+      .select('id, title, starts_at, location, details, created_at')
+      .eq('household_id', HOUSEHOLD_ID)
+      .lt('starts_at', nowIso)
+      .order('starts_at', { ascending:false })
+      .limit(10)
+
+    if(e1 || e2){
+      console.error(e1 || e2)
+      agenda.innerHTML = `<div class="empty">Impossible de charger les évènements (RLS / table events).</div>`
+      return
+    }
+
+    const items = [...(upcoming || []), ...(past || [])]
+    if(items.length === 0){
+      agenda.innerHTML = `<div class="empty">Aucun évènement pour le moment.</div>`
+      return
+    }
+
+    agenda.innerHTML = items.map(ev => {
+      const b = badgeForEvent(ev.starts_at)
+      const meta = `${fmtDateTime(ev.starts_at)}${ev.location ? ' · ' + ev.location : ''}`
+      const details = ev.details ? `<div class="meta" style="margin-top:8px">${esc(ev.details)}</div>` : ''
+      return `
+        <div class="row">
+          <div style="min-width:0">
+            <div class="title">${esc(ev.title)}</div>
+            <div class="meta">${esc(meta)}</div>
+            ${details}
+            <div class="mini-actions">
+              <button class="link" onclick="removeEvent('${ev.id}')">Supprimer</button>
+            </div>
+          </div>
+          <span class="badge ${b.kind}">${b.text}</span>
+        </div>
+      `
+    }).join('')
+  }
+
+  function clearForm(){
+    $('title').value = ''
+    $('startsAt').value = ''
+    $('location').value = ''
+    $('details').value = ''
+  }
+
+  function setDefaultDateTime(){
+    // prochaine heure ronde
+    const d = new Date()
+    d.setMinutes(0,0,0)
+    d.setHours(d.getHours()+1)
+    // datetime-local attend YYYY-MM-DDTHH:MM
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth()+1).padStart(2,'0')
+    const dd = String(d.getDate()).padStart(2,'0')
+    const hh = String(d.getHours()).padStart(2,'0')
+    const mi = String(d.getMinutes()).padStart(2,'0')
+    $('startsAt').value = `${yyyy}-${mm}-${dd}T${hh}:${mi}`
+  }
+
+  async function createEvent(){
+    const title = $('title').value.trim()
+    const startsAtLocal = $('startsAt').value
+    const locationTxt = $('location').value.trim()
+    const detailsTxt = $('details').value.trim()
+
+    if(!title){
+      toast("Veuillez saisir un titre.")
+      return
+    }
+    if(!startsAtLocal){
+      toast("Veuillez sélectionner une date/heure de début.")
+      return
+    }
+
+    // Conversion datetime-local (local) -> ISO
+    const startsAtIso = new Date(startsAtLocal).toISOString()
+
+    const payload = {
+      household_id: HOUSEHOLD_ID,
+      title,
+      starts_at: startsAtIso,
+      // votre table a aussi 'date' NOT NULL : on la renseigne = starts_at
+      date: startsAtIso,
+      location: locationTxt || null,
+      details: detailsTxt || null,
+      // created_by a un default auth.uid(), donc pas obligatoire
+    }
+
+    const { error } = await sb.from('events').insert(payload)
+
+    if(error){
+      console.error(error)
+      toast("Création impossible (RLS / champs obligatoires).")
+      return
+    }
+
+    toast("Évènement créé.")
+    clearForm()
+    await loadAgenda()
+  }
+
+  async function removeEvent(eventId){
+    // Nécessite une policy RLS autorisant DELETE (souvent seulement created_by)
+    const { error } = await sb.from('events').delete().eq('id', eventId)
+    if(error){
+      console.error(error)
+      toast("Suppression refusée (RLS).")
+      return
+    }
+    toast("Évènement supprimé.")
+    await loadAgenda()
+  }
+
+  function enableRealtime(){
+    try{
+      sb.channel('events-rt')
+        .on('postgres_changes', { event:'*', schema:'public', table:'events' }, () => loadAgenda())
+        .subscribe()
+    }catch(e){
+      // pas bloquant
+      console.warn(e)
+    }
+  }
+
+  // UI events
+  $('refreshBtn').addEventListener('click', async () => {
+    toast("Actualisation…")
+    await loadAgenda()
+  })
+  $('createBtn').addEventListener('click', createEvent)
+  $('clearForm').addEventListener('click', clearForm)
+  $('fillExample').addEventListener('click', () => {
+    $('title').value = "Soirée jeux"
+    if(!$('startsAt').value) setDefaultDateTime()
+    $('location').value = "Salon"
+    $('details').value = "Apporter un jeu + snacks. Début 20h."
+  })
+  $('scrollToCreate').addEventListener('click', () => {
+    $('createCard').scrollIntoView({ behavior:'smooth', block:'start' })
+  })
+
+  // Start
+  ;(async function(){
+    const ok = await guard()
+    if(!ok) return
+    await loadHousehold()
+    if(!HOUSEHOLD_ID){
+      $('agenda').innerHTML = `<div class="empty">Aucune colocation.</div>`
+      return
+    }
+    if(!$('startsAt').value) setDefaultDateTime()
+    await loadAgenda()
+    enableRealtime()
+  })()
+</script>
+
+<script>
+    (function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) {
+    console.warn("themeBtn introuvable");
+    return;
+  }
+
+  function applyLabel(){
+    const isLight = document.documentElement.classList.contains('light') || document.body.classList.contains('light');
+    btn.textContent = isLight ? '🌙 Sombre' : '☀️ Clair';
+  }
+
+  // Appliquer le thème sauvegardé au chargement
+  const saved = localStorage.getItem('mycoloc-theme') || 'dark';
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    document.body.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.body.classList.remove('light');
+  }
+  applyLabel();
+
+  // Toggle
+  btn.addEventListener('click', () => {
+    const nowLight = !document.documentElement.classList.contains('light');
+    document.documentElement.classList.toggle('light', nowLight);
+    document.body.classList.toggle('light', nowLight);
+    localStorage.setItem('mycoloc-theme', nowLight ? 'light' : 'dark');
+    applyLabel();
+  });
+})();
+  </script>
+
+</body>
+</html>

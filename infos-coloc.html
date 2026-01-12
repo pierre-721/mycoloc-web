@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Infos Coloc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f; --card:rgba(255,255,255,.06); --border:rgba(255,255,255,.12);
+      --text:#fff; --muted:#b3b3b3; --accent:#ff2d55;
+      --good:#30d158; --warn:#ffd60a; --bad:#ff453a;
+      --radius:18px; --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(255,45,85,.15), transparent 45%),
+        radial-gradient(circle at 92% 85%, rgba(90,200,250,.10), transparent 45%),
+        var(--bg);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:22px 16px 40px}
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:var(--blur);
+      background:linear-gradient(to bottom,rgba(11,11,15,.85),rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      margin:-22px -16px 18px;
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .topbar .left{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .topbar h1{margin:0;font-size:18px;font-weight:800}
+    .topbar .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      background:transparent;border:1px solid var(--border);color:var(--text);
+      border-radius:999px;padding:8px 12px;cursor:pointer;font-weight:700;font-size:13px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+    .btn.good{background:rgba(48,209,88,.18);border-color:rgba(48,209,88,.25)}
+    .btn.warn{background:rgba(255,214,10,.16);border-color:rgba(255,214,10,.25)}
+
+    .grid{display:grid;gap:14px;grid-template-columns: 1fr 1fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);backdrop-filter:var(--blur);
+      border:1px solid var(--border);border-radius:var(--radius);
+      padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.45)
+    }
+    .card h2{margin:0 0 10px;font-size:14px}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .label{font-size:12px;color:var(--muted)}
+    input, textarea{
+      padding:12px;border-radius:12px;background:rgba(255,255,255,.08);
+      border:1px solid var(--border);color:var(--text);font-size:13px;outline:none;
+    }
+    textarea{min-height:120px; resize: vertical}
+    input:focus, textarea:focus{border-color:var(--accent);background:rgba(255,255,255,.12)}
+    .rowline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    .pill{
+      font-size:12px;color:var(--muted);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      padding:8px 10px;border-radius:999px;
+      display:flex;gap:8px;align-items:center;flex-wrap:wrap
+    }
+    code{
+      padding:10px 12px;border-radius:12px;background: rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.12);color:#fff;font-weight:900;
+      letter-spacing:.6px;user-select:all
+    }
+    .empty{
+      padding:14px;text-align:center;color:var(--muted);font-size:13px;
+      border-radius:14px;border:1px dashed rgba(255,255,255,.16);background: rgba(255,255,255,.04);
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78); backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none; max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+    a.link{color:#fff;text-decoration:underline;text-underline-offset:3px}
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="left">
+      <h1>🏠 Infos Coloc</h1>
+      <div class="sub" id="sub">Chargement…</div>
+    </div>
+    <div class="right">
+      <button class="btn" onclick="location.href='home.html'">Retour</button>
+      <button class="btn" id="refreshBtn">Actualiser</button>
+      <button class="btn primary" id="saveBtn">Enregistrer</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- Code + WiFi -->
+      <div class="card">
+        <h2>Partage / Accès</h2>
+
+        <div class="empty" id="joinCodeBox">Chargement du code d’invitation…</div>
+
+        <div class="rowline">
+          <button class="btn" id="copyJoinCodeBtn">Copier le code</button>
+          <button class="btn warn" id="openHouseholdBtn">Gérer la colocation</button>
+        </div>
+
+        <div class="field">
+          <div class="label">Wi-Fi — Nom (SSID)</div>
+          <input id="wifiSsid" placeholder="Ex: Livebox-1234" />
+        </div>
+
+        <div class="field">
+          <div class="label">Wi-Fi — Mot de passe</div>
+          <input id="wifiPassword" placeholder="••••••••" />
+        </div>
+
+        <div class="field">
+          <div class="label">Wi-Fi — Notes</div>
+          <textarea id="wifiNotes" placeholder="Ex: réseau 5G recommandé, répéteur dans le salon…"></textarea>
+        </div>
+      </div>
+
+      <!-- Proprio + Urgences -->
+      <div class="card">
+        <h2>Propriétaire / Contact</h2>
+
+        <div class="field">
+          <div class="label">Nom</div>
+          <input id="ownerName" placeholder="Nom du propriétaire / agence" />
+        </div>
+
+        <div class="field">
+          <div class="label">Téléphone</div>
+          <input id="ownerPhone" placeholder="06…" />
+        </div>
+
+        <div class="field">
+          <div class="label">Email</div>
+          <input id="ownerEmail" placeholder="contact@…" />
+        </div>
+
+        <div class="field">
+          <div class="label">Notes</div>
+          <textarea id="ownerNotes" placeholder="Disponibilités, procédure en cas de problème…"></textarea>
+        </div>
+
+        <h2 style="margin-top:14px">Urgences</h2>
+        <div class="field">
+          <div class="label">Infos utiles</div>
+          <textarea id="emergencyNotes" placeholder="Ex: disjoncteur, coupure d’eau, numéros, fuite, etc."></textarea>
+        </div>
+      </div>
+
+      <!-- Équipements -->
+      <div class="card">
+        <h2>Équipements & Inventaire</h2>
+        <div class="field">
+          <div class="label">Équipements (cuisine / salon / ménage)</div>
+          <textarea id="equipmentNotes" placeholder="Ex: aspirateur Dyson, airfryer, machine à laver, sèche-linge…"></textarea>
+        </div>
+
+        <h2 style="margin-top:14px">Fournisseurs</h2>
+        <div class="field">
+          <div class="label">Infos (EDF/ENGIE, Internet, assurance, etc.)</div>
+          <textarea id="utilitiesNotes" placeholder="Ex: abonnement internet, contrat électricité, identifiants utiles (sans données sensibles si possible)…"></textarea>
+        </div>
+      </div>
+
+      <!-- Règles + Liens -->
+      <div class="card">
+        <h2>Règles & Liens</h2>
+
+        <div class="field">
+          <div class="label">Règles de vie (ménage, bruit, invités, poubelles…)</div>
+          <textarea id="rulesNotes" placeholder="Ex: poubelles mardi/jeudi, invités prévenir 24h…"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="label">Notes générales</div>
+          <textarea id="generalNotes" placeholder="Infos importantes de la colocation…"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="label">Liens (JSON)</div>
+          <textarea id="linksJson" placeholder='Ex: {"whatsapp":"https://…","drive":"https://…"}'></textarea>
+        </div>
+
+        <div class="rowline">
+          <button class="btn" id="fillExampleBtn">Remplir un exemple</button>
+          <span class="pill">Conseil : évitez les mots de passe sensibles ici si la coloc est large.</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const sb = window.supabase.createClient(
+    'https://thcsbtvbybhmmiabovjc.supabase.co',
+    'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+  )
+  const $ = (id) => document.getElementById(id)
+
+  function toast(message){
+    const t = $('toast')
+    t.textContent = message
+    t.style.display = 'block'
+    clearTimeout(window.__toastTimer)
+    window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+  }
+  function esc(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+      .replaceAll('"','&quot;').replaceAll("'","&#039;")
+  }
+
+  let SESSION=null, HOUSEHOLD_ID=null, SETTINGS=null, JOIN_CODE=null
+
+  async function guard(){
+    const { data } = await sb.auth.getSession()
+    SESSION = data.session
+    if(!SESSION){ location.href='index.html'; return false }
+    return true
+  }
+
+  async function loadHousehold(){
+    const { data, error } = await sb
+      .from('household_members')
+      .select('household_id, households(name)')
+      .eq('user_id', SESSION.user.id)
+      .order('created_at', { ascending:true })
+      .limit(1)
+      .single()
+
+    if(error){
+      console.error(error)
+      $('sub').textContent = "Impossible de charger la colocation (RLS ?)"
+      return
+    }
+    HOUSEHOLD_ID = data.household_id
+    $('sub').textContent = data.households?.name ? `Colocation : ${data.households.name}` : "Colocation"
+  }
+
+  async function loadJoinCode(){
+    const box = $('joinCodeBox')
+    box.innerHTML = `Chargement…`
+
+    const { data, error } = await sb
+      .from('household_join_codes')
+      .select('code')
+      .eq('household_id', HOUSEHOLD_ID)
+      .single()
+
+    if(error){
+      console.warn(error)
+      JOIN_CODE = null
+      box.innerHTML = `<div style="color:var(--muted)">Code non accessible (RLS). Ouvrez “Gérer la colocation”.</div>`
+      return
+    }
+
+    JOIN_CODE = data?.code || null
+    box.innerHTML = `
+      <div class="pill">
+        <span style="opacity:.9">Code d’invitation :</span>
+        <code id="codeValue">${esc(JOIN_CODE)}</code>
+      </div>
+      <div class="note" style="margin-top:10px;color:var(--muted);font-size:12px">
+        Partagez ce code à une personne pour qu’elle rejoigne la colocation depuis l’écran d’accueil.
+      </div>
+    `
+  }
+
+  async function loadSettings(){
+    const { data, error } = await sb
+      .from('household_settings')
+      .select('*')
+      .eq('household_id', HOUSEHOLD_ID)
+      .maybeSingle()
+
+    if(error){
+      console.error(error)
+      toast("Impossible de charger les infos (RLS).")
+      return
+    }
+
+    SETTINGS = data || null
+
+    $('wifiSsid').value = SETTINGS?.wifi_ssid || ''
+    $('wifiPassword').value = SETTINGS?.wifi_password || ''
+    $('wifiNotes').value = SETTINGS?.wifi_notes || ''
+
+    $('ownerName').value = SETTINGS?.owner_name || ''
+    $('ownerPhone').value = SETTINGS?.owner_phone || ''
+    $('ownerEmail').value = SETTINGS?.owner_email || ''
+    $('ownerNotes').value = SETTINGS?.owner_notes || ''
+
+    $('equipmentNotes').value = SETTINGS?.equipment_notes || ''
+    $('utilitiesNotes').value = SETTINGS?.utilities_notes || ''
+    $('emergencyNotes').value = SETTINGS?.emergency_notes || ''
+    $('rulesNotes').value = SETTINGS?.rules_notes || ''
+    $('generalNotes').value = SETTINGS?.general_notes || ''
+
+    $('linksJson').value = SETTINGS?.links_json ? JSON.stringify(SETTINGS.links_json, null, 2) : '{}'
+  }
+
+  async function saveSettings(){
+    let links = {}
+    try{
+      links = JSON.parse($('linksJson').value || '{}')
+    }catch(e){
+      toast("Le JSON des liens est invalide.")
+      return
+    }
+
+    const payload = {
+      household_id: HOUSEHOLD_ID,
+      updated_at: new Date().toISOString(),
+      updated_by: SESSION.user.id,
+
+      wifi_ssid: $('wifiSsid').value.trim() || null,
+      wifi_password: $('wifiPassword').value.trim() || null,
+      wifi_notes: $('wifiNotes').value.trim() || null,
+
+      owner_name: $('ownerName').value.trim() || null,
+      owner_phone: $('ownerPhone').value.trim() || null,
+      owner_email: $('ownerEmail').value.trim() || null,
+      owner_notes: $('ownerNotes').value.trim() || null,
+
+      equipment_notes: $('equipmentNotes').value.trim() || null,
+      utilities_notes: $('utilitiesNotes').value.trim() || null,
+      emergency_notes: $('emergencyNotes').value.trim() || null,
+      rules_notes: $('rulesNotes').value.trim() || null,
+      general_notes: $('generalNotes').value.trim() || null,
+
+      links_json: links
+    }
+
+    const { error } = await sb
+      .from('household_settings')
+      .upsert(payload, { onConflict: 'household_id' })
+
+    if(error){
+      console.error(error)
+      toast("Enregistrement refusé (RLS).")
+      return
+    }
+
+    toast("Infos enregistrées.")
+    await loadSettings()
+  }
+
+  async function copyJoinCode(){
+    const code = JOIN_CODE
+    if(!code){ toast("Aucun code à copier."); return }
+
+    try{
+      await navigator.clipboard.writeText(code)
+      toast("Code copié.")
+    }catch(e){
+      const tmp = document.createElement('textarea')
+      tmp.value = code
+      document.body.appendChild(tmp)
+      tmp.select()
+      document.execCommand('copy')
+      tmp.remove()
+      toast("Code copié.")
+    }
+  }
+
+  function fillExample(){
+    $('wifiSsid').value = 'Livebox-1234'
+    $('wifiPassword').value = 'MotDePasseWiFi'
+    $('wifiNotes').value = 'Privilégier le 5G. Répéteur dans le salon.'
+
+    $('ownerName').value = 'Agence / Propriétaire'
+    $('ownerPhone').value = '06 00 00 00 00'
+    $('ownerEmail').value = 'contact@exemple.com'
+    $('ownerNotes').value = 'Disponible en semaine. Prévenir avant intervention.'
+
+    $('equipmentNotes').value = 'Aspirateur, serpillère, machine à laver, airfryer, cafetière…'
+    $('utilitiesNotes').value = 'Internet : fournisseur X / box salon. Électricité : fournisseur Y.'
+    $('emergencyNotes').value = 'Disjoncteur : entrée. Arrivée d’eau : cuisine. Urgence : 112.'
+    $('rulesNotes').value = 'Invités : prévenir. Ménage : rotation hebdo. Bruit : calme après 23h.'
+    $('generalNotes').value = 'Pensez à noter les achats communs et à valider les tâches.'
+
+    $('linksJson').value = JSON.stringify({
+      whatsapp: "https://chat.whatsapp.com/xxxx",
+      drive: "https://drive.google.com/xxxx",
+      doc_routines: "https://notion.so/xxxx"
+    }, null, 2)
+  }
+
+  // UI
+  $('refreshBtn').addEventListener('click', async ()=>{ toast("Actualisation…"); await refreshAll() })
+  $('saveBtn').addEventListener('click', saveSettings)
+  $('copyJoinCodeBtn').addEventListener('click', copyJoinCode)
+  $('openHouseholdBtn').addEventListener('click', ()=> location.href='household.html')
+  $('fillExampleBtn').addEventListener('click', fillExample)
+
+  async function refreshAll(){
+    await loadJoinCode()
+    await loadSettings()
+  }
+
+  // Start
+  ;(async function(){
+    const ok = await guard()
+    if(!ok) return
+    await loadHousehold()
+    if(!HOUSEHOLD_ID){ toast("Aucune colocation."); return }
+    await refreshAll()
+  })()
+</script>
+</body>
+</html>

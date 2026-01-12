@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Actus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --text:#fff;
+      --muted:#b3b3b3;
+      --accent:#ff2d55;
+      --good:#30d158;
+      --warn:#ffd60a;
+      --bad:#ff453a;
+      --radius:18px;
+      --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(255,45,85,.15), transparent 45%),
+        radial-gradient(circle at 92% 85%, rgba(90,200,250,.10), transparent 45%),
+        var(--bg);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 40px}
+
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:var(--blur);
+      background:linear-gradient(to bottom,rgba(11,11,15,.85),rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      margin:-22px -16px 18px;
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .topbar .left{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .topbar h1{margin:0;font-size:18px;font-weight:700}
+    .topbar .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+
+    .btn{
+      background:transparent;border:1px solid var(--border);
+      color:var(--text);border-radius:999px;
+      padding:8px 12px;cursor:pointer;font-weight:600;font-size:13px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+
+    .grid{display:grid;gap:14px;grid-template-columns: 1.25fr .75fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.45)
+    }
+    .card h2{margin:0 0 10px;font-size:14px}
+
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      margin: 10px 0 14px;
+    }
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .label{font-size:12px;color:var(--muted)}
+    input, textarea, select{
+      padding:12px;border-radius:12px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      color:var(--text);font-size:13px;outline:none;
+    }
+    input:focus, textarea:focus, select:focus{border-color:var(--accent);background:rgba(255,255,255,.12)}
+    textarea{min-height:140px; resize: vertical}
+
+    .post{
+      padding:14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .post + .post{margin-top:12px}
+    .postTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .postTitle{font-size:15px;font-weight:800; letter-spacing:-.2px}
+    .postMeta{margin-top:6px;font-size:12px;color:var(--muted)}
+    .postContent{margin-top:12px;font-size:13px;line-height:1.55;color:#e9e9e9; white-space:pre-wrap}
+    .badge{
+      font-size:11px;font-weight:800;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .mini{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+    .link{
+      background:none;border:none;color:var(--muted);
+      cursor:pointer;font-size:13px;padding:0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .empty{
+      padding:14px;text-align:center;
+      color:var(--muted);font-size:13px;
+      border-radius:14px;border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78);
+      backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none;
+      max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="left">
+      <h1>📰 Actus</h1>
+      <div class="sub" id="sub">Chargement…</div>
+    </div>
+    <div class="right">
+      <button class="btn" onclick="location.href='home.html'">Retour</button>
+      <button class="btn" id="refreshBtn">Actualiser</button>
+      <button class="btn" id="themeBtn" type="button">☀️ Clair</button>
+      <button class="btn primary" id="scrollCreateBtn">Créer</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- Feed -->
+      <div class="card">
+        <h2>Fil d’actus (news_posts)</h2>
+
+        <div class="controls">
+          <select id="filterCategory" title="Filtrer par catégorie" style="min-width:200px">
+            <option value="">Toutes catégories</option>
+          </select>
+
+          <input id="search" placeholder="Rechercher (titre / contenu)…" style="flex:1;min-width:220px" />
+        </div>
+
+        <div id="feed"></div>
+      </div>
+
+      <!-- Create -->
+      <div class="card" id="createCard">
+        <h2>Créer une actu</h2>
+
+        <div class="field">
+          <div class="label">Catégorie</div>
+          <input id="category" placeholder="Ex: Infos / Courses / Règles / Urgent..." />
+        </div>
+
+        <div class="field">
+          <div class="label">Titre</div>
+          <input id="title" placeholder="Ex: Réunion coloc dimanche" />
+        </div>
+
+        <div class="field">
+          <div class="label">Contenu</div>
+          <textarea id="content" placeholder="Décrivez l’info à partager…"></textarea>
+        </div>
+
+        <div style="margin-top:10px">
+          <button class="btn primary" id="createBtn" style="width:100%">Publier</button>
+        </div>
+
+        <div class="mini">
+          <button class="link" id="fillExample">Remplir un exemple</button>
+          <button class="link" id="clearForm">Vider</button>
+        </div>
+
+        <div class="empty" style="margin-top:14px">
+          Astuce : si la suppression échoue, c’est généralement une policy RLS qui limite DELETE à <b>created_by</b>.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const sb = window.supabase.createClient(
+    'https://thcsbtvbybhmmiabovjc.supabase.co',
+    'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+  )
+
+  const $ = (id) => document.getElementById(id)
+
+  function toast(message){
+    const t = $('toast')
+    t.textContent = message
+    t.style.display = 'block'
+    clearTimeout(window.__toastTimer)
+    window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+  }
+
+  function esc(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;")
+  }
+
+  function fmtDateTime(iso){
+    if(!iso) return '—'
+    const d = new Date(iso)
+    return d.toLocaleString('fr-FR', { weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+  }
+
+  let SESSION=null, HOUSEHOLD_ID=null
+  let ALL_POSTS=[]
+
+  async function guard(){
+    const { data } = await sb.auth.getSession()
+    SESSION = data.session
+    if(!SESSION){ location.href='index.html'; return false }
+    return true
+  }
+
+  async function loadHousehold(){
+    const { data, error } = await sb
+      .from('household_members')
+      .select('household_id, households(name)')
+      .eq('user_id', SESSION.user.id)
+      .order('created_at', { ascending:true })
+      .limit(1)
+      .single()
+
+    if(error){
+      console.error(error)
+      $('sub').textContent = "Impossible de charger la colocation (RLS ?)"
+      return
+    }
+    HOUSEHOLD_ID = data.household_id
+    $('sub').textContent = data.households?.name ? `Colocation : ${data.households.name}` : "Colocation"
+  }
+
+  function buildCategoryOptions(posts){
+    const sel = $('filterCategory')
+    const cats = Array.from(new Set((posts || []).map(p => (p.category || '').trim()).filter(Boolean)))
+      .sort((a,b) => a.localeCompare(b, 'fr'))
+    sel.innerHTML = `<option value="">Toutes catégories</option>` + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')
+  }
+
+  function applyFilters(){
+    const feed = $('feed')
+    const cat = $('filterCategory').value.trim()
+    const q = $('search').value.trim().toLowerCase()
+
+    let items = [...ALL_POSTS]
+    if(cat){
+      items = items.filter(p => (p.category || '').trim() === cat)
+    }
+    if(q){
+      items = items.filter(p =>
+        (p.title || '').toLowerCase().includes(q) ||
+        (p.content || '').toLowerCase().includes(q)
+      )
+    }
+
+    if(items.length === 0){
+      feed.innerHTML = `<div class="empty">Aucun résultat.</div>`
+      return
+    }
+
+    feed.innerHTML = items.map(p => {
+      const isMine = p.created_by === SESSION.user.id
+      return `
+        <div class="post">
+          <div class="postTop">
+            <div style="min-width:0">
+              <div class="postTitle">${esc(p.title)}</div>
+              <div class="postMeta">
+                ${esc(p.category)} · ${esc(fmtDateTime(p.created_at))}
+                ${isMine ? ' · <span style="color:#fff">Vous</span>' : ''}
+              </div>
+            </div>
+            <span class="badge">${esc(p.category)}</span>
+          </div>
+
+          <div class="postContent">${esc(p.content)}</div>
+
+          <div class="mini">
+            ${isMine ? `<button class="link" onclick="deletePost('${p.id}')">Supprimer</button>` : ''}
+          </div>
+        </div>
+      `
+    }).join('')
+  }
+
+  async function loadPosts(){
+    const feed = $('feed')
+    feed.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const { data, error } = await sb
+      .from('news_posts')
+      .select('id, household_id, created_at, created_by, category, title, content')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('created_at', { ascending:false })
+      .limit(100)
+
+    if(error){
+      console.error(error)
+      feed.innerHTML = `<div class="empty">Impossible de charger news_posts (RLS).</div>`
+      return
+    }
+
+    ALL_POSTS = data || []
+    buildCategoryOptions(ALL_POSTS)
+    applyFilters()
+  }
+
+  function clearForm(){
+    $('category').value = ''
+    $('title').value = ''
+    $('content').value = ''
+  }
+
+  async function createPost(){
+    const category = $('category').value.trim()
+    const title = $('title').value.trim()
+    const content = $('content').value.trim()
+
+    if(!category){ toast("Catégorie obligatoire."); return }
+    if(!title){ toast("Titre obligatoire."); return }
+    if(!content){ toast("Contenu obligatoire."); return }
+
+    const payload = {
+      household_id: HOUSEHOLD_ID,
+      category,
+      title,
+      content
+      // created_by default auth.uid()
+    }
+
+    const { error } = await sb.from('news_posts').insert(payload)
+    if(error){
+      console.error(error)
+      toast("Publication refusée (RLS).")
+      return
+    }
+
+    toast("Actu publiée.")
+    clearForm()
+    await loadPosts()
+  }
+
+  async function deletePost(id){
+    const { error } = await sb.from('news_posts').delete().eq('id', id)
+    if(error){
+      console.error(error)
+      toast("Suppression refusée (RLS).")
+      return
+    }
+    toast("Actu supprimée.")
+    await loadPosts()
+  }
+
+  function enableRealtime(){
+    try{
+      sb.channel('news-rt')
+        .on('postgres_changes', { event:'*', schema:'public', table:'news_posts' }, () => loadPosts())
+        .subscribe()
+    }catch(e){ console.warn(e) }
+  }
+
+  // UI
+  $('refreshBtn').addEventListener('click', async ()=>{ toast("Actualisation…"); await loadPosts() })
+  $('scrollCreateBtn').addEventListener('click', ()=> $('createCard').scrollIntoView({ behavior:'smooth', block:'start' }))
+  $('createBtn').addEventListener('click', createPost)
+
+  $('filterCategory').addEventListener('change', applyFilters)
+  $('search').addEventListener('input', applyFilters)
+
+  $('clearForm').addEventListener('click', clearForm)
+  $('fillExample').addEventListener('click', () => {
+    $('category').value = 'Infos'
+    $('title').value = 'Rappel : réunion coloc'
+    $('content').value = 'Dimanche 18h : point rapide (courses, ménage, planning). Merci de noter vos sujets.'
+  })
+
+  // Start
+  ;(async function(){
+    const ok = await guard()
+    if(!ok) return
+    await loadHousehold()
+    if(!HOUSEHOLD_ID){ toast("Aucune colocation."); return }
+    await loadPosts()
+    enableRealtime()
+  })()
+</script>
+<script>
+    (function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) {
+    console.warn("themeBtn introuvable");
+    return;
+  }
+
+  function applyLabel(){
+    const isLight = document.documentElement.classList.contains('light') || document.body.classList.contains('light');
+    btn.textContent = isLight ? '🌙 Sombre' : '☀️ Clair';
+  }
+
+  // Appliquer le thème sauvegardé au chargement
+  const saved = localStorage.getItem('mycoloc-theme') || 'dark';
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    document.body.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.body.classList.remove('light');
+  }
+  applyLabel();
+
+  // Toggle
+  btn.addEventListener('click', () => {
+    const nowLight = !document.documentElement.classList.contains('light');
+    document.documentElement.classList.toggle('light', nowLight);
+    document.body.classList.toggle('light', nowLight);
+    localStorage.setItem('mycoloc-theme', nowLight ? 'light' : 'dark');
+    applyLabel();
+  });
+})();
+  </script>
+</body>
+</html>

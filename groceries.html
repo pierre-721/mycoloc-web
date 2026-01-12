@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Courses</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --text:#fff;
+      --muted:#b3b3b3;
+      --accent:#ff2d55;
+      --good:#30d158;
+      --warn:#ffd60a;
+      --bad:#ff453a;
+      --radius:18px;
+      --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,45,85,.15), transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(90,200,250,.10), transparent 45%),
+        var(--bg);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 40px}
+
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:var(--blur);
+      background:linear-gradient(to bottom,rgba(11,11,15,.85),rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      margin:-22px -16px 18px;
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .topbar .left{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .topbar h1{margin:0;font-size:18px;font-weight:700}
+    .topbar .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+
+    .btn{
+      background:transparent;border:1px solid var(--border);
+      color:var(--text);border-radius:999px;
+      padding:8px 12px;cursor:pointer;font-weight:600;font-size:13px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+    .btn.warn{background:rgba(255,214,10,.16);border-color:rgba(255,214,10,.25)}
+    .btn.good{background:rgba(48,209,88,.18);border-color:rgba(48,209,88,.25)}
+
+    .seg{
+      display:flex; gap:6px; padding:4px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius:999px;
+    }
+    .seg button{
+      padding:8px 10px; border-radius:999px;
+      border:none; cursor:pointer; font-weight:800; font-size:12px;
+      color: var(--muted);
+      background: transparent;
+    }
+    .seg button.active{
+      color:#fff;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .grid{display:grid;gap:14px;grid-template-columns: 1.25fr .75fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.45)
+    }
+    .card h2{margin:0 0 10px;font-size:14px}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0 14px}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .label{font-size:12px;color:var(--muted)}
+    input, select{
+      padding:12px;border-radius:12px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      color:var(--text);font-size:13px;outline:none;
+    }
+    input:focus, select:focus{border-color:var(--accent);background:rgba(255,255,255,.12)}
+
+    .row{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+      padding:12px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08)
+    }
+    .row + .row{margin-top:10px}
+    .row.checked{opacity:.55}
+    .leftCol{min-width:0;flex:1}
+    .title{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .meta{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .link{
+      background:none;border:none;color:var(--muted);
+      cursor:pointer;font-size:13px;padding:0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .badge{
+      font-size:11px;font-weight:900;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      white-space:nowrap;
+      text-transform: uppercase;
+      letter-spacing: .2px;
+    }
+    .badge.common{border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.12)}
+    .badge.personal{border-color: rgba(255,214,10,.25); background: rgba(255,214,10,.12)}
+    .badge.planned{border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.06)}
+    .badge.purchased{border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.12)}
+    .badge.cancelled{border-color: rgba(255,69,58,.25); background: rgba(255,69,58,.12)}
+
+    .empty{
+      padding:14px;text-align:center;
+      color:var(--muted);font-size:13px;
+      border-radius:14px;border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78);
+      backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none;
+      max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+    .pill{
+      font-size:12px;color:var(--muted);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      padding:8px 10px;border-radius:999px;
+      display:flex;gap:8px;align-items:center
+    }
+    .pill input{padding:0;border:none;background:transparent;outline:none;color:#fff}
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="left">
+      <h1>🛒 Courses</h1>
+      <div class="sub" id="sub">Chargement…</div>
+    </div>
+    <div class="right">
+      <div class="seg">
+        <button id="tabListBtn" class="active" type="button">Liste</button>
+        <button id="tabHistoryBtn" type="button">Historique</button>
+      </div>
+      <button class="btn" onclick="location.href='home.html'">Retour</button>
+      <button class="btn" id="refreshBtn">Actualiser</button>
+      <button class="btn" id="themeBtn" type="button">☀️ Clair</button>
+
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- LEFT: list / history -->
+      <div class="card">
+        <h2 id="leftTitle">Liste</h2>
+
+        <div class="controls" id="filters">
+          <select id="fScope" title="Scope">
+            <option value="">Tous</option>
+            <option value="common">Commun</option>
+            <option value="personal">Perso</option>
+          </select>
+
+          <select id="fStatus" title="Statut">
+            <option value="">Tous statuts</option>
+            <option value="planned">Planned</option>
+            <option value="purchased">Purchased</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+
+          <div class="pill" style="flex:1;min-width:220px">
+            <span>🔎</span>
+            <input id="fSearch" placeholder="Rechercher…" />
+          </div>
+
+          <button class="btn" id="clearFiltersBtn">Reset</button>
+        </div>
+
+        <div id="list"></div>
+      </div>
+
+      <!-- RIGHT: create / quick actions -->
+      <div class="card" id="rightCard">
+        <h2>Ajouter</h2>
+
+        <div class="field">
+          <div class="label">Nom</div>
+          <input id="name" placeholder="Ex: Lait / Pâtes / Lessive…" />
+        </div>
+
+        <div class="field">
+          <div class="label">Quantité</div>
+          <input id="qty" type="number" min="1" value="1" />
+        </div>
+
+        <div class="field">
+          <div class="label">Scope</div>
+          <select id="scope">
+            <option value="common">Commun</option>
+            <option value="personal">Personnel</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="label">Reçu (URL optionnelle)</div>
+          <input id="receiptUrl" placeholder="https://..." />
+        </div>
+
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap">
+          <button class="btn primary" id="addBtn" style="flex:1">Ajouter</button>
+          <button class="btn" id="exampleBtn">Exemple</button>
+        </div>
+
+        <div class="empty" style="margin-top:14px">
+          Astuce : “Acheté” met automatiquement <b>status=purchased</b> + <b>purchased_at</b> + <b>purchased_by</b>.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  console.log("ORIGIN:", location.origin, "HREF:", location.href);
+  console.log("LS keys:", Object.keys(localStorage).filter(k => k.includes("sb-") || k.includes("supabase")));
+
+  const sb = window.supabase.createClient(
+    'https://thcsbtvbybhmmiabovjc.supabase.co',
+    'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+  )
+
+  const $ = (id) => document.getElementById(id)
+
+  function toast(message){
+    const t = $('toast')
+    t.textContent = message
+    t.style.display = 'block'
+    clearTimeout(window.__toastTimer)
+    window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+  }
+
+  function esc(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;")
+  }
+
+  function fmtDateTime(iso){
+    if(!iso) return '—'
+    const d = new Date(iso)
+    return d.toLocaleString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+  }
+
+  let SESSION=null, HOUSEHOLD_ID=null
+  let TAB='list' // 'list' | 'history'
+  let ITEMS=[]
+
+  async function guard(){
+    const { data } = await sb.auth.getSession()
+    SESSION = data.session
+    if(!SESSION){ location.href='index.html'; return false }
+    return true
+  }
+
+  async function loadHousehold(){
+    const { data, error } = await sb
+      .from('household_members')
+      .select('household_id, households(name)')
+      .eq('user_id', SESSION.user.id)
+      .order('created_at', { ascending:true })
+      .limit(1)
+      .single()
+
+    if(error){
+      console.error(error)
+      $('sub').textContent = "Impossible de charger la colocation (RLS ?)"
+      return
+    }
+    HOUSEHOLD_ID = data.household_id
+    $('sub').textContent = data.households?.name ? `Colocation : ${data.households.name}` : "Colocation"
+  }
+
+  async function loadItems(){
+    const list = $('list')
+    list.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const { data, error } = await sb
+      .from('grocery_items')
+      .select('*')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('created_at', { ascending:false })
+      .limit(500)
+
+    if(error){
+      console.error(error)
+      list.innerHTML = `<div class="empty">Impossible de charger grocery_items (RLS).</div>`
+      return
+    }
+
+    ITEMS = data || []
+    render()
+  }
+
+  function setTab(next){
+    TAB = next
+    $('tabListBtn').classList.toggle('active', TAB==='list')
+    $('tabHistoryBtn').classList.toggle('active', TAB==='history')
+    $('leftTitle').textContent = TAB==='list' ? 'Liste' : 'Historique'
+    $('filters').style.display = 'flex'
+    render()
+  }
+
+  function applyFilters(items){
+    const scope = $('fScope').value.trim()
+    const status = $('fStatus').value.trim()
+    const q = $('fSearch').value.trim().toLowerCase()
+
+    let out = [...items]
+
+    if(scope) out = out.filter(i => (i.scope || '') === scope)
+    if(status) out = out.filter(i => (i.status || '') === status)
+    if(q) out = out.filter(i => (i.name || '').toLowerCase().includes(q))
+
+    return out
+  }
+
+  function scopeBadge(i){
+    const isCommon = (i.scope === 'common')
+    return `<span class="badge ${isCommon ? 'common':'personal'}">${isCommon ? 'Commun':'Perso'}</span>`
+  }
+
+  function statusBadge(i){
+    const s = (i.status || 'planned')
+    return `<span class="badge ${esc(s)}">${esc(s)}</span>`
+  }
+
+  function receiptLink(i){
+    if(!i.receipt_url) return ''
+    const url = esc(i.receipt_url)
+    return `<a href="${url}" target="_blank" rel="noreferrer" style="color:#fff;text-decoration:underline;text-underline-offset:3px">Reçu</a>`
+  }
+
+  function render(){
+    const list = $('list')
+
+    if(!ITEMS.length){
+      list.innerHTML = `<div class="empty">Aucun article.</div>`
+      return
+    }
+
+    let data = [...ITEMS]
+
+    if(TAB === 'list'){
+      // liste = non achetés (ou status planned/cancelled), on garde tout mais tri by is_checked
+      data = data.filter(i => (i.status || 'planned') !== 'purchased')
+      data = applyFilters(data)
+
+      if(data.length === 0){
+        list.innerHTML = `<div class="empty">Aucun résultat.</div>`
+        return
+      }
+
+      list.innerHTML = data.map(i => `
+        <div class="row ${i.is_checked ? 'checked':''}">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <input type="checkbox" ${i.is_checked ? 'checked':''}
+              onchange="togglePurchased('${i.id}', this.checked)">
+          </div>
+
+          <div class="leftCol">
+            <div class="title">${esc(i.name)} ×${i.quantity}</div>
+            <div class="meta">
+              ${scopeBadge(i)} ${statusBadge(i)}
+              ${i.owner_user_id ? '· Perso (owner)' : ''}
+            </div>
+
+            <div class="mini">
+              ${receiptLink(i)}
+              <button class="link" onclick="setReceipt('${i.id}')">Ajouter/modifier reçu</button>
+              <button class="link" onclick="setStatus('${i.id}', 'cancelled')">Annuler</button>
+              <button class="link" onclick="removeItem('${i.id}')">Supprimer</button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+            <div class="meta">${esc(fmtDateTime(i.created_at))}</div>
+          </div>
+        </div>
+      `).join('')
+
+    } else {
+      // historique = achetés
+      data = data.filter(i => (i.status || '') === 'purchased' || i.is_checked === true)
+      data = applyFilters(data)
+
+      // tri par purchased_at desc
+      data.sort((a,b) => new Date(b.purchased_at || b.created_at) - new Date(a.purchased_at || a.created_at))
+
+      if(data.length === 0){
+        list.innerHTML = `<div class="empty">Aucun achat enregistré.</div>`
+        return
+      }
+
+      list.innerHTML = data.map(i => `
+        <div class="row">
+          <div class="leftCol">
+            <div class="title">${esc(i.name)} ×${i.quantity}</div>
+            <div class="meta">
+              ${scopeBadge(i)} ${statusBadge(i)}
+              · Acheté : ${esc(fmtDateTime(i.purchased_at))}
+            </div>
+
+            <div class="mini">
+              ${receiptLink(i)}
+              <button class="link" onclick="togglePurchased('${i.id}', false)">Remettre en liste</button>
+              <button class="link" onclick="removeItem('${i.id}')">Supprimer</button>
+            </div>
+          </div>
+          <span class="badge purchased">HIST</span>
+        </div>
+      `).join('')
+    }
+  }
+
+  async function addItem(){
+    const name = $('name').value.trim()
+    const quantity = parseInt($('qty').value || '1', 10)
+    const scope = $('scope').value
+    const receipt_url = $('receiptUrl').value.trim() || null
+
+    if(!name){ toast("Nom obligatoire."); return }
+
+    const payload = {
+      household_id: HOUSEHOLD_ID,
+      name,
+      quantity: isNaN(quantity) ? 1 : quantity,
+      scope,
+      is_common: scope === 'common',
+      owner_user_id: scope === 'personal' ? SESSION.user.id : null,
+      is_checked: false,
+      status: 'planned',
+      receipt_url
+    }
+
+    const { error } = await sb.from('grocery_items').insert(payload)
+    if(error){
+      console.error(error)
+      toast("Ajout refusé (RLS).")
+      return
+    }
+
+    $('name').value=''
+    $('qty').value='1'
+    $('scope').value='common'
+    $('receiptUrl').value=''
+    toast("Article ajouté.")
+    await loadItems()
+  }
+
+  async function togglePurchased(id, checked){
+    const update = checked ? {
+      is_checked: true,
+      status: 'purchased',
+      purchased_at: new Date().toISOString(),
+      purchased_by: SESSION.user.id
+    } : {
+      is_checked: false,
+      status: 'planned',
+      purchased_at: null,
+      purchased_by: null
+    }
+
+    const { error } = await sb.from('grocery_items').update(update).eq('id', id)
+    if(error){
+      console.error(error)
+      toast("Mise à jour refusée (RLS).")
+      return
+    }
+
+    toast(checked ? "Marqué comme acheté." : "Remis en liste.")
+    await loadItems()
+  }
+
+  async function setStatus(id, status){
+    const update = { status }
+    if(status !== 'purchased'){
+      update.is_checked = false
+      update.purchased_at = null
+      update.purchased_by = null
+    }
+
+    const { error } = await sb.from('grocery_items').update(update).eq('id', id)
+    if(error){
+      console.error(error)
+      toast("Changement refusé (RLS).")
+      return
+    }
+
+    toast("Statut mis à jour.")
+    await loadItems()
+  }
+
+  async function setReceipt(id){
+    const url = prompt("URL du reçu (laisser vide pour supprimer) :", "")
+    if(url === null) return
+
+    const receipt_url = url.trim() || null
+
+    const { error } = await sb
+      .from('grocery_items')
+      .update({ receipt_url })
+      .eq('id', id)
+
+    if(error){
+      console.error(error)
+      toast("Mise à jour refusée (RLS).")
+      return
+    }
+
+    toast("Reçu mis à jour.")
+    await loadItems()
+  }
+
+  async function removeItem(id){
+    if(!confirm("Supprimer cet article ?")) return
+    const { error } = await sb.from('grocery_items').delete().eq('id', id)
+    if(error){
+      console.error(error)
+      toast("Suppression refusée (RLS).")
+      return
+    }
+    toast("Article supprimé.")
+    await loadItems()
+  }
+
+  function clearFilters(){
+    $('fScope').value = ''
+    $('fStatus').value = ''
+    $('fSearch').value = ''
+    render()
+  }
+
+  function enableRealtime(){
+    try{
+      sb.channel('grocery-rt')
+        .on('postgres_changes', { event:'*', schema:'public', table:'grocery_items' }, () => loadItems())
+        .subscribe()
+    }catch(e){ console.warn(e) }
+  }
+
+  // UI
+  $('tabListBtn').addEventListener('click', ()=> setTab('list'))
+  $('tabHistoryBtn').addEventListener('click', ()=> setTab('history'))
+
+  $('refreshBtn').addEventListener('click', async ()=>{ toast("Actualisation…"); await loadItems() })
+
+  $('addBtn').addEventListener('click', addItem)
+  $('exampleBtn').addEventListener('click', ()=>{
+    $('name').value = 'Pâtes'
+    $('qty').value = '2'
+    $('scope').value = 'common'
+    $('receiptUrl').value = ''
+  })
+
+  $('fScope').addEventListener('change', render)
+  $('fStatus').addEventListener('change', render)
+  $('fSearch').addEventListener('input', render)
+  $('clearFiltersBtn').addEventListener('click', clearFilters)
+
+  // Start
+  ;(async function(){
+    const ok = await guard()
+    if(!ok) return
+    await loadHousehold()
+    if(!HOUSEHOLD_ID){ toast("Aucune colocation."); return }
+    await loadItems()
+    enableRealtime()
+  })()
+</script>
+<script>
+    (function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) {
+    console.warn("themeBtn introuvable");
+    return;
+  }
+
+  function applyLabel(){
+    const isLight = document.documentElement.classList.contains('light') || document.body.classList.contains('light');
+    btn.textContent = isLight ? '🌙 Sombre' : '☀️ Clair';
+  }
+
+  // Appliquer le thème sauvegardé au chargement
+  const saved = localStorage.getItem('mycoloc-theme') || 'dark';
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    document.body.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.body.classList.remove('light');
+  }
+  applyLabel();
+
+  // Toggle
+  btn.addEventListener('click', () => {
+    const nowLight = !document.documentElement.classList.contains('light');
+    document.documentElement.classList.toggle('light', nowLight);
+    document.body.classList.toggle('light', nowLight);
+    localStorage.setItem('mycoloc-theme', nowLight ? 'light' : 'dark');
+    applyLabel();
+  });
+})();
+  </script>
+
+</body>
+</html>

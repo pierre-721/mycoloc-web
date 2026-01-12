@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Tâches</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --text:#fff;
+      --muted:#b3b3b3;
+      --accent:#ff2d55;
+      --good:#30d158;
+      --warn:#ffd60a;
+      --bad:#ff453a;
+      --radius:18px;
+      --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,45,85,.15), transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(90,200,250,.10), transparent 45%),
+        var(--bg);
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:22px 16px 40px}
+
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:var(--blur);
+      background:linear-gradient(to bottom,rgba(11,11,15,.85),rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      margin:-22px -16px 18px;
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .topbar .left{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .topbar h1{margin:0;font-size:18px;font-weight:700}
+    .topbar .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+
+    .btn{
+      background:transparent;border:1px solid var(--border);
+      color:var(--text);border-radius:999px;
+      padding:8px 12px;cursor:pointer;font-weight:600;font-size:13px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+    .btn.warn{background:rgba(255,214,10,.16);border-color:rgba(255,214,10,.25)}
+    .btn.good{background:rgba(48,209,88,.18);border-color:rgba(48,209,88,.25)}
+
+    .seg{
+      display:flex; gap:6px; padding:4px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius:999px;
+    }
+    .seg button{
+      padding:8px 10px; border-radius:999px;
+      border:none; cursor:pointer; font-weight:700; font-size:12px;
+      color: var(--muted);
+      background: transparent;
+    }
+    .seg button.active{
+      color:#fff;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
+    }
+
+    .grid{display:grid;gap:14px;grid-template-columns: 1fr 1fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.45)
+    }
+    .card h2{margin:0 0 10px;font-size:14px}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .label{font-size:12px;color:var(--muted)}
+    input, select{
+      padding:12px;border-radius:12px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      color:var(--text);font-size:13px;outline:none;
+    }
+    input:focus, select:focus{border-color:var(--accent);background:rgba(255,255,255,.12)}
+
+    .row{
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+      padding:12px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08)
+    }
+    .row + .row{margin-top:10px}
+    .leftCol{min-width:0;flex:1}
+    .title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .meta{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+
+    .badge{
+      font-size:11px;font-weight:800;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .badge.good{border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.12)}
+    .badge.warn{border-color: rgba(255,214,10,.25); background: rgba(255,214,10,.12)}
+    .badge.bad{border-color: rgba(255,69,58,.25); background: rgba(255,69,58,.12)}
+
+    .link{
+      background:none;border:none;color:var(--muted);
+      cursor:pointer;font-size:13px;padding:0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .empty{
+      padding:14px;text-align:center;
+      color:var(--muted);font-size:13px;
+      border-radius:14px;border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78);
+      backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none;
+      max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="left">
+      <h1>🧹 Tâches</h1>
+      <div class="sub" id="sub">Chargement…</div>
+    </div>
+    <div class="right">
+      <div class="seg" title="Mode d’affichage">
+        <button id="modePersonBtn" class="active" type="button">Perso</button>
+        <button id="modeTeamBtn" type="button">Équipe</button>
+      </div>
+
+      <button class="btn" onclick="location.href='home.html'">Retour</button>
+      <button class="btn warn" id="prevWeekBtn">Semaine -</button>
+      <button class="btn warn" id="nextWeekBtn">Semaine +</button>
+      <button class="btn" id="refreshBtn">Actualiser</button>
+      <button class="btn" id="themeBtn" type="button">☀️ Clair</button>
+      <button class="btn primary" id="genBtn">Générer la semaine</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <!-- Templates -->
+      <div class="card">
+        <h2>Templates (task_templates)</h2>
+
+        <div class="field">
+          <div class="label">Nouveau template</div>
+          <input id="tplTitle" placeholder="Ex: Sortir les poubelles" />
+        </div>
+
+        <div class="field">
+          <div class="label">Ordre (sort_order)</div>
+          <input id="tplOrder" type="number" value="0" />
+        </div>
+
+        <div style="margin-top:10px">
+          <button class="btn primary" id="createTplBtn" style="width:100%">Ajouter le template</button>
+        </div>
+
+        <div style="margin-top:14px" id="tplList"></div>
+      </div>
+
+      <!-- Assignments -->
+      <div class="card">
+        <h2 id="asgTitle">Assignations semaine — Perso</h2>
+        <div class="label" style="margin-bottom:10px">
+          Semaine du <span id="weekLabel" style="color:#fff;font-weight:700">—</span>
+        </div>
+
+        <!-- Team selector (only in team mode) -->
+        <div class="field" id="teamPicker" style="display:none; margin-top:0">
+          <div class="label">Équipe</div>
+          <select id="teamSelect"></select>
+        </div>
+
+        <div id="asgList" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const sb = window.supabase.createClient(
+    'https://thcsbtvbybhmmiabovjc.supabase.co',
+    'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+  )
+
+  const $ = (id) => document.getElementById(id)
+
+  function toast(message){
+    const t = $('toast')
+    t.textContent = message
+    t.style.display = 'block'
+    clearTimeout(window.__toastTimer)
+    window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+  }
+
+  function esc(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;")
+  }
+
+  function toYYYYMMDD(d){
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth()+1).padStart(2,'0')
+    const dd = String(d.getDate()).padStart(2,'0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  function weekStartMonday(date = new Date()){
+    const d = new Date(date)
+    const day = (d.getDay() + 6) % 7 // 0=lundi
+    d.setHours(0,0,0,0)
+    d.setDate(d.getDate() - day)
+    return d
+  }
+
+  let SESSION=null, HOUSEHOLD_ID=null, WEEK_START=null
+  let ROOMMATES=[]
+  let TEAMS=[]
+  let MODE='personal' // 'personal' | 'team'
+
+  async function guard(){
+    const { data } = await sb.auth.getSession()
+    SESSION = data.session
+    if(!SESSION){ location.href='index.html'; return false }
+    return true
+  }
+
+  async function loadHousehold(){
+    const { data, error } = await sb
+      .from('household_members')
+      .select('household_id, households(name)')
+      .eq('user_id', SESSION.user.id)
+      .order('created_at', { ascending:true })
+      .limit(1)
+      .single()
+
+    if(error){
+      console.error(error)
+      $('sub').textContent = "Impossible de charger la colocation (RLS ?)"
+      return
+    }
+    HOUSEHOLD_ID = data.household_id
+    $('sub').textContent = data.households?.name ? `Colocation : ${data.households.name}` : "Colocation"
+  }
+
+  async function loadRoommates(){
+    const { data, error } = await sb
+      .from('roommates')
+      .select('id, first_name, last_name')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('created_at', { ascending:true })
+
+    if(error){ console.error(error); ROOMMATES=[]; return }
+
+    ROOMMATES = (data || []).map(r => ({
+      ...r,
+      display: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() || 'Sans nom'
+    }))
+  }
+
+  async function loadTeams(){
+    const { data, error } = await sb
+      .from('teams')
+      .select('id, name, sort_order, created_at')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('sort_order', { ascending:true })
+      .order('created_at', { ascending:true })
+
+    if(error){ console.error(error); TEAMS=[]; return }
+
+    TEAMS = data || []
+    renderTeamSelect()
+  }
+
+  function renderTeamSelect(){
+    const sel = $('teamSelect')
+    if(!sel) return
+    if(!TEAMS.length){
+      sel.innerHTML = `<option value="">Aucune équipe</option>`
+      return
+    }
+    sel.innerHTML = TEAMS.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('')
+  }
+
+  async function loadTemplates(){
+    const box = $('tplList')
+    box.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const { data, error } = await sb
+      .from('task_templates')
+      .select('id, title, sort_order, created_at')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('sort_order', { ascending:true })
+      .order('created_at', { ascending:true })
+
+    if(error){
+      console.error(error)
+      box.innerHTML = `<div class="empty">Impossible de charger task_templates (RLS).</div>`
+      return
+    }
+
+    if(!data || data.length===0){
+      box.innerHTML = `<div class="empty">Aucun template. Ajoutez votre première tâche type.</div>`
+      return
+    }
+
+    box.innerHTML = data.map(t => `
+      <div class="row">
+        <div class="leftCol">
+          <div class="title">${esc(t.title)}</div>
+          <div class="meta">Ordre: ${t.sort_order}</div>
+          <div class="mini">
+            <button class="link" onclick="deleteTemplate('${t.id}')">Supprimer</button>
+          </div>
+        </div>
+        <span class="badge good">TPL</span>
+      </div>
+    `).join('')
+  }
+
+  async function createTemplate(){
+    const title = $('tplTitle').value.trim()
+    const sort_order = parseInt($('tplOrder').value || '0', 10)
+    if(!title){ toast("Veuillez saisir un titre."); return }
+
+    const { error } = await sb
+      .from('task_templates')
+      .insert({ household_id: HOUSEHOLD_ID, title, sort_order })
+
+    if(error){ console.error(error); toast("Création impossible (RLS)."); return }
+
+    $('tplTitle').value=''
+    $('tplOrder').value='0'
+    toast("Template ajouté.")
+    await loadTemplates()
+    await loadAssignments()
+  }
+
+  async function deleteTemplate(id){
+    const { error } = await sb.from('task_templates').delete().eq('id', id)
+    if(error){ console.error(error); toast("Suppression refusée (RLS)."); return }
+    toast("Template supprimé.")
+    await loadTemplates()
+    await loadAssignments()
+  }
+
+  function roommateOptions(selectedId){
+    const opts = [`<option value="">Non assigné</option>`]
+      .concat(ROOMMATES.map(r => `<option value="${r.id}" ${r.id===selectedId?'selected':''}>${esc(r.display)}</option>`))
+      .join('')
+    return `<select class="asgSelect">${opts}</select>`
+  }
+
+  function teamOptions(selectedId){
+    const opts = [`<option value="">Non assigné</option>`]
+      .concat(TEAMS.map(t => `<option value="${t.id}" ${t.id===selectedId?'selected':''}>${esc(t.name)}</option>`))
+      .join('')
+    return `<select class="teamSelect">${opts}</select>`
+  }
+
+  async function loadAssignments(){
+    $('weekLabel').textContent = toYYYYMMDD(WEEK_START)
+
+    if(MODE === 'personal'){
+      $('asgTitle').textContent = 'Assignations semaine — Perso'
+      $('teamPicker').style.display = 'none'
+      await loadPersonalAssignments()
+    }else{
+      $('asgTitle').textContent = 'Assignations semaine — Équipe'
+      $('teamPicker').style.display = 'block'
+      await loadTeamAssignments()
+    }
+  }
+
+  async function loadPersonalAssignments(){
+    const box = $('asgList')
+    box.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const { data, error } = await sb
+      .from('task_assignments')
+      .select('id, is_done, week_start, updated_at, assigned_roommate_id, template_id, task_templates(title, sort_order)')
+      .eq('household_id', HOUSEHOLD_ID)
+      .eq('week_start', toYYYYMMDD(WEEK_START))
+      .order('updated_at', { ascending:false })
+
+    if(error){
+      console.error(error)
+      box.innerHTML = `<div class="empty">Impossible de charger task_assignments (RLS).</div>`
+      return
+    }
+
+    if(!data || data.length===0){
+      box.innerHTML = `<div class="empty">Aucune assignation perso. Cliquez sur “Générer la semaine”.</div>`
+      return
+    }
+
+    data.sort((a,b) => (a.task_templates?.sort_order ?? 0) - (b.task_templates?.sort_order ?? 0))
+
+    box.innerHTML = data.map(a => {
+      const title = a.task_templates?.title ?? 'Tâche'
+      const badge = a.is_done ? {t:'DONE', k:'good'} : {t:'TODO', k:'warn'}
+      return `
+        <div class="row">
+          <div class="leftCol">
+            <div class="title">${esc(title)}</div>
+            <div class="meta">Semaine du ${esc(toYYYYMMDD(WEEK_START))}</div>
+
+            <div class="mini">
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)">
+                <input type="checkbox" ${a.is_done ? 'checked':''}
+                  onchange="togglePersonalDone('${a.id}', this.checked)" />
+                Terminé
+              </label>
+
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span style="font-size:12px;color:var(--muted)">Assigné à</span>
+                <span data-asg="${a.id}">${roommateOptions(a.assigned_roommate_id)}</span>
+                <button class="link" onclick="applyPersonalAssign('${a.id}')">Appliquer</button>
+              </div>
+
+              <button class="link" onclick="deletePersonalAssignment('${a.id}')">Supprimer</button>
+            </div>
+          </div>
+          <span class="badge ${badge.k}">${badge.t}</span>
+        </div>
+      `
+    }).join('')
+  }
+
+  async function loadTeamAssignments(){
+    const box = $('asgList')
+    box.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const selectedTeamId = $('teamSelect').value || (TEAMS[0]?.id ?? null)
+    if(selectedTeamId && $('teamSelect').value !== selectedTeamId){
+      $('teamSelect').value = selectedTeamId
+    }
+
+    if(!selectedTeamId){
+      box.innerHTML = `<div class="empty">Aucune équipe. Créez une équipe dans “Infos Coloc”.</div>`
+      return
+    }
+
+    const { data, error } = await sb
+      .from('team_task_assignments')
+      .select('id, is_done, week_start, updated_at, team_id, template_id, task_templates(title, sort_order), teams(name)')
+      .eq('household_id', HOUSEHOLD_ID)
+      .eq('week_start', toYYYYMMDD(WEEK_START))
+      .eq('team_id', selectedTeamId)
+      .order('updated_at', { ascending:false })
+
+    if(error){
+      console.error(error)
+      box.innerHTML = `<div class="empty">Impossible de charger team_task_assignments (RLS).</div>`
+      return
+    }
+
+    if(!data || data.length===0){
+      box.innerHTML = `<div class="empty">Aucune assignation équipe pour cette semaine. Cliquez sur “Générer la semaine”.</div>`
+      return
+    }
+
+    data.sort((a,b) => (a.task_templates?.sort_order ?? 0) - (b.task_templates?.sort_order ?? 0))
+
+    box.innerHTML = data.map(a => {
+      const title = a.task_templates?.title ?? 'Tâche'
+      const teamName = a.teams?.name ?? 'Équipe'
+      const badge = a.is_done ? {t:'DONE', k:'good'} : {t:'TODO', k:'warn'}
+      return `
+        <div class="row">
+          <div class="leftCol">
+            <div class="title">${esc(title)}</div>
+            <div class="meta">${esc(teamName)} · Semaine du ${esc(toYYYYMMDD(WEEK_START))}</div>
+
+            <div class="mini">
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)">
+                <input type="checkbox" ${a.is_done ? 'checked':''}
+                  onchange="toggleTeamDone('${a.id}', this.checked)" />
+                Terminé
+              </label>
+
+              <button class="link" onclick="deleteTeamAssignment('${a.id}')">Supprimer</button>
+            </div>
+          </div>
+          <span class="badge ${badge.k}">${badge.t}</span>
+        </div>
+      `
+    }).join('')
+  }
+
+  async function generateWeek(){
+    if(MODE === 'personal') return generateWeekPersonal()
+    return generateWeekTeam()
+  }
+
+  async function fetchTemplatesIds(){
+    const { data, error } = await sb
+      .from('task_templates')
+      .select('id')
+      .eq('household_id', HOUSEHOLD_ID)
+    if(error) throw error
+    return data || []
+  }
+
+  async function generateWeekPersonal(){
+    let tpls=[]
+    try{ tpls = await fetchTemplatesIds() }catch(e){ console.error(e); toast("Impossible de lire les templates (RLS)."); return }
+    if(!tpls.length){ toast("Ajoutez au moins un template."); return }
+
+    const { data: asg, error: e2 } = await sb
+      .from('task_assignments')
+      .select('template_id')
+      .eq('household_id', HOUSEHOLD_ID)
+      .eq('week_start', toYYYYMMDD(WEEK_START))
+
+    if(e2){ console.error(e2); toast("Impossible de lire les assignations (RLS)."); return }
+
+    const existing = new Set((asg || []).map(x => x.template_id))
+    const toCreate = tpls
+      .filter(t => !existing.has(t.id))
+      .map(t => ({
+        household_id: HOUSEHOLD_ID,
+        week_start: toYYYYMMDD(WEEK_START),
+        template_id: t.id,
+        assigned_roommate_id: null,
+        is_done: false
+      }))
+
+    if(!toCreate.length){ toast("Déjà généré pour cette semaine."); return }
+
+    const { error: e3 } = await sb.from('task_assignments').insert(toCreate)
+    if(e3){ console.error(e3); toast("Génération impossible (RLS)."); return }
+
+    toast("Semaine (perso) générée.")
+    await loadAssignments()
+  }
+
+  async function generateWeekTeam(){
+    const selectedTeamId = $('teamSelect').value || (TEAMS[0]?.id ?? null)
+    if(!selectedTeamId){ toast("Aucune équipe."); return }
+
+    let tpls=[]
+    try{ tpls = await fetchTemplatesIds() }catch(e){ console.error(e); toast("Impossible de lire les templates (RLS)."); return }
+    if(!tpls.length){ toast("Ajoutez au moins un template."); return }
+
+    const { data: asg, error: e2 } = await sb
+      .from('team_task_assignments')
+      .select('template_id')
+      .eq('household_id', HOUSEHOLD_ID)
+      .eq('team_id', selectedTeamId)
+      .eq('week_start', toYYYYMMDD(WEEK_START))
+
+    if(e2){ console.error(e2); toast("Impossible de lire les assignations équipe (RLS)."); return }
+
+    const existing = new Set((asg || []).map(x => x.template_id))
+    const toCreate = tpls
+      .filter(t => !existing.has(t.id))
+      .map(t => ({
+        household_id: HOUSEHOLD_ID,
+        team_id: selectedTeamId,
+        week_start: toYYYYMMDD(WEEK_START),
+        template_id: t.id,
+        is_done: false
+      }))
+
+    if(!toCreate.length){ toast("Déjà généré pour cette semaine."); return }
+
+    const { error: e3 } = await sb.from('team_task_assignments').insert(toCreate)
+    if(e3){ console.error(e3); toast("Génération impossible (RLS)."); return }
+
+    toast("Semaine (équipe) générée.")
+    await loadAssignments()
+  }
+
+  async function togglePersonalDone(id, done){
+    const { error } = await sb
+      .from('task_assignments')
+      .update({ is_done: done, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if(error){ console.error(error); toast("Mise à jour refusée (RLS)."); return }
+    await loadAssignments()
+  }
+
+  async function toggleTeamDone(id, done){
+    const { error } = await sb
+      .from('team_task_assignments')
+      .update({ is_done: done, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if(error){ console.error(error); toast("Mise à jour refusée (RLS)."); return }
+    await loadAssignments()
+  }
+
+  async function applyPersonalAssign(assignmentId){
+    const holder = document.querySelector(`[data-asg="${assignmentId}"]`)
+    const sel = holder?.querySelector('select.asgSelect')
+    const roommateId = sel?.value || null
+
+    const { error } = await sb
+      .from('task_assignments')
+      .update({ assigned_roommate_id: roommateId, updated_at: new Date().toISOString() })
+      .eq('id', assignmentId)
+
+    if(error){ console.error(error); toast("Assignation refusée (RLS)."); return }
+    toast("Assignation mise à jour.")
+    await loadAssignments()
+  }
+
+  async function deletePersonalAssignment(id){
+    const { error } = await sb.from('task_assignments').delete().eq('id', id)
+    if(error){ console.error(error); toast("Suppression refusée (RLS)."); return }
+    toast("Assignation supprimée.")
+    await loadAssignments()
+  }
+
+  async function deleteTeamAssignment(id){
+    const { error } = await sb.from('team_task_assignments').delete().eq('id', id)
+    if(error){ console.error(error); toast("Suppression refusée (RLS)."); return }
+    toast("Assignation supprimée.")
+    await loadAssignments()
+  }
+
+  function enableRealtime(){
+    try{
+      sb.channel('tasks-rt')
+        .on('postgres_changes', { event:'*', schema:'public', table:'task_templates' }, () => loadTemplates())
+        .on('postgres_changes', { event:'*', schema:'public', table:'task_assignments' }, () => MODE==='personal' ? loadAssignments() : null)
+        .on('postgres_changes', { event:'*', schema:'public', table:'team_task_assignments' }, () => MODE==='team' ? loadAssignments() : null)
+        .on('postgres_changes', { event:'*', schema:'public', table:'teams' }, async () => { await loadTeams(); await loadAssignments(); })
+        .subscribe()
+    }catch(e){ console.warn(e) }
+  }
+
+  function setMode(next){
+    MODE = next
+    $('modePersonBtn').classList.toggle('active', MODE==='personal')
+    $('modeTeamBtn').classList.toggle('active', MODE==='team')
+    loadAssignments()
+  }
+
+  // UI
+  $('createTplBtn').addEventListener('click', createTemplate)
+  $('refreshBtn').addEventListener('click', async ()=>{ toast("Actualisation…"); await loadTemplates(); await loadAssignments(); })
+  $('genBtn').addEventListener('click', generateWeek)
+
+  $('prevWeekBtn').addEventListener('click', async ()=>{ WEEK_START.setDate(WEEK_START.getDate()-7); await loadAssignments() })
+  $('nextWeekBtn').addEventListener('click', async ()=>{ WEEK_START.setDate(WEEK_START.getDate()+7); await loadAssignments() })
+
+  $('modePersonBtn').addEventListener('click', ()=> setMode('personal'))
+  $('modeTeamBtn').addEventListener('click', ()=> setMode('team'))
+
+  $('teamSelect').addEventListener('change', ()=> loadAssignments())
+
+  // Start
+  ;(async function(){
+    const ok = await guard()
+    if(!ok) return
+    await loadHousehold()
+    if(!HOUSEHOLD_ID){ toast("Aucune colocation."); return }
+
+    WEEK_START = weekStartMonday(new Date())
+
+    await loadRoommates()
+    await loadTeams()
+    await loadTemplates()
+    await loadAssignments()
+    enableRealtime()
+  })()
+</script>
+<script>
+    (function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) {
+    console.warn("themeBtn introuvable");
+    return;
+  }
+
+  function applyLabel(){
+    const isLight = document.documentElement.classList.contains('light') || document.body.classList.contains('light');
+    btn.textContent = isLight ? '🌙 Sombre' : '☀️ Clair';
+  }
+
+  // Appliquer le thème sauvegardé au chargement
+  const saved = localStorage.getItem('mycoloc-theme') || 'dark';
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    document.body.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.body.classList.remove('light');
+  }
+  applyLabel();
+
+  // Toggle
+  btn.addEventListener('click', () => {
+    const nowLight = !document.documentElement.classList.contains('light');
+    document.documentElement.classList.toggle('light', nowLight);
+    document.body.classList.toggle('light', nowLight);
+    localStorage.setItem('mycoloc-theme', nowLight ? 'light' : 'dark');
+    applyLabel();
+  });
+})();
+  </script>
+</body>
+</html>

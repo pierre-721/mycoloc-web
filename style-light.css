@@ -1,0 +1,45 @@
+/* ======================
+   LIGHT MODE (compat : html.light ET body.light)
+   ====================== */
+html.light, body.light{
+  --bg:#f5f5f7;
+  --card:rgba(255,255,255,.78);
+  --border:rgba(0,0,0,.10);
+  --text:#101014;
+  --muted:#5a5a60;
+  --accent:#ff2d55;
+}
+
+/* Fond */
+html.light body, body.light{
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255,45,85,.14), transparent 46%),
+    radial-gradient(circle at 92% 85%, rgba(0,122,255,.10), transparent 46%),
+    var(--bg) !important;
+}
+
+/* Topbar */
+html.light .topbar, body.light .topbar{
+  background:linear-gradient(to bottom, rgba(245,245,247,.92), rgba(245,245,247,.62)) !important;
+  border-bottom:1px solid rgba(0,0,0,.06) !important;
+}
+
+/* Cards / Row / Inputs (si présents dans la page) */
+html.light .card, body.light .card{
+  box-shadow: 0 18px 50px rgba(0,0,0,.10) !important;
+}
+html.light .row, body.light .row{
+  background:rgba(0,0,0,.03) !important;
+  border:1px solid rgba(0,0,0,.06) !important;
+}
+html.light input, html.light textarea, html.light select,
+body.light input, body.light textarea, body.light select{
+  background:rgba(0,0,0,.04) !important;
+  border:1px solid rgba(0,0,0,.10) !important;
+  color: var(--text) !important;
+}
+html.light code, body.light code{
+  background: rgba(0,0,0,.06) !important;
+  border:1px solid rgba(0,0,0,.10) !important;
+  color:#101014 !important;
+}

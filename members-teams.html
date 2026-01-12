@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Infos Coloc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --text:#fff;
+      --muted:#b3b3b3;
+      --accent:#ff2d55;
+      --good:#30d158;
+      --warn:#ffd60a;
+      --radius:18px;
+      --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,45,85,.15), transparent 45%),
+        radial-gradient(circle at 90% 90%, rgba(90,200,250,.10), transparent 45%),
+        var(--bg);
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 40px}
+
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:var(--blur);
+      background:linear-gradient(to bottom,rgba(11,11,15,.85),rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      margin:-22px -16px 18px;
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .topbar .left{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .topbar h1{margin:0;font-size:18px;font-weight:700}
+    .topbar .sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{
+      background:transparent;border:1px solid var(--border);
+      color:var(--text);border-radius:999px;
+      padding:8px 12px;cursor:pointer;font-weight:600;font-size:13px;
+      transition:transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+
+    .grid{display:grid;gap:14px;grid-template-columns: 1fr 1fr}
+    @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background:var(--card);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.45)
+    }
+    .card h2{margin:0 0 10px;font-size:14px}
+
+    .field{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .label{font-size:12px;color:var(--muted)}
+    input, select{
+      padding:12px;border-radius:12px;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      color:var(--text);font-size:13px;outline:none;
+    }
+    input:focus, select:focus{border-color:var(--accent);background:rgba(255,255,255,.12)}
+
+    .row{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px;border-radius:14px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08)
+    }
+    .row + .row{margin-top:10px}
+    .leftCol{min-width:0}
+    .title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .meta{font-size:12px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .link{
+      background:none;border:none;color:var(--muted);
+      cursor:pointer;font-size:13px;padding:0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .badge{
+      font-size:11px;font-weight:800;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .badge.good{border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.12)}
+    .badge.warn{border-color: rgba(255,214,10,.25); background: rgba(255,214,10,.12)}
+    .empty{
+      padding:14px;text-align:center;
+      color:var(--muted);font-size:13px;
+      border-radius:14px;border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+    }
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78);
+      backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none;
+      max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="left">
+      <h1>🤝 Membres et Teams</h1>
+      <div class="sub" id="sub">Chargement…</div>
+    </div>
+    <div class="right">
+      <button class="btn" onclick="location.href='home.html'">Retour</button>
+      <button class="btn" id="refreshBtn">Actualiser</button>
+      <button class="btn" id="themeBtn" type="button">☀️ Clair</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- Roommates -->
+      <div class="card">
+        <h2>Colocataires (roommates)</h2>
+
+        <div class="field">
+          <div class="label">Prénom</div>
+          <input id="firstName" placeholder="Ex: Pierre" />
+        </div>
+
+        <div class="field">
+          <div class="label">Nom</div>
+          <input id="lastName" placeholder="Ex: Dupont" />
+        </div>
+
+        <div class="field">
+          <div class="label">Chambre (optionnel)</div>
+          <input id="roomNumber" placeholder="Ex: 2" />
+        </div>
+
+        <div style="margin-top:10px">
+          <button class="btn primary" id="addRoommateBtn" style="width:100%">Ajouter le colocataire</button>
+        </div>
+
+        <div style="margin-top:14px" id="roommatesList"></div>
+      </div>
+
+      <!-- Teams -->
+      <div class="card">
+        <h2>Équipes (teams + team_members)</h2>
+
+        <div class="field">
+          <div class="label">Créer une équipe</div>
+          <input id="teamName" placeholder="Ex: Team Cuisine" />
+        </div>
+
+        <div class="field">
+          <div class="label">Ordre</div>
+          <input id="teamOrder" type="number" value="0" />
+        </div>
+
+        <div style="margin-top:10px">
+          <button class="btn primary" id="createTeamBtn" style="width:100%">Créer l’équipe</button>
+        </div>
+
+        <div style="margin-top:14px" id="teamsList"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const sb = window.supabase.createClient(
+    'https://thcsbtvbybhmmiabovjc.supabase.co',
+    'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+  )
+
+  const $ = (id) => document.getElementById(id)
+
+  function toast(message){
+    const t = $('toast')
+    t.textContent = message
+    t.style.display = 'block'
+    clearTimeout(window.__toastTimer)
+    window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+  }
+
+  function esc(str){
+    return String(str ?? '')
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#039;")
+  }
+
+  let SESSION=null, HOUSEHOLD_ID=null
+  let ROOMMATES=[]
+
+  async function guard(){
+    const { data } = await sb.auth.getSession()
+    SESSION = data.session
+    if(!SESSION){ location.href='index.html'; return false }
+    return true
+  }
+
+  async function loadHousehold(){
+    const { data, error } = await sb
+      .from('household_members')
+      .select('household_id, households(name)')
+      .eq('user_id', SESSION.user.id)
+      .order('created_at', { ascending:true })
+      .limit(1)
+      .single()
+
+    if(error){
+      console.error(error)
+      $('sub').textContent = "Impossible de charger la colocation (RLS ?)"
+      return
+    }
+    HOUSEHOLD_ID = data.household_id
+    $('sub').textContent = data.households?.name ? `Colocation : ${data.households.name}` : "Colocation"
+  }
+
+  async function loadRoommates(){
+    const box = $('roommatesList')
+    box.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const { data, error } = await sb
+      .from('roommates')
+      .select('id, first_name, last_name, room_number, created_at')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('created_at', { ascending:true })
+
+    if(error){
+      console.error(error)
+      box.innerHTML = `<div class="empty">Impossible de charger roommates (RLS).</div>`
+      ROOMMATES=[]
+      return
+    }
+
+    ROOMMATES = (data || []).map(r => ({
+      ...r,
+      display: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()
+    }))
+
+    if(ROOMMATES.length===0){
+      box.innerHTML = `<div class="empty">Aucun colocataire.</div>`
+      return
+    }
+
+    box.innerHTML = ROOMMATES.map(r => `
+      <div class="row">
+        <div class="leftCol">
+          <div class="title">${esc(r.display)}</div>
+          <div class="meta">${r.room_number ? `Chambre ${esc(r.room_number)}` : 'Membre'}</div>
+          <div class="mini">
+            <button class="link" onclick="deleteRoommate('${r.id}')">Supprimer</button>
+          </div>
+        </div>
+        <span class="badge good">ROOM</span>
+      </div>
+    `).join('')
+  }
+
+  async function addRoommate(){
+    const first_name = $('firstName').value.trim()
+    const last_name  = $('lastName').value.trim()
+    const room_number = $('roomNumber').value.trim()
+
+    if(!first_name || !last_name){
+      toast("Prénom et nom sont obligatoires.")
+      return
+    }
+
+    const payload = {
+      household_id: HOUSEHOLD_ID,
+      first_name,
+      last_name,
+      room_number: room_number || null,
+      created_by: SESSION.user.id
+      // languages a default {}, donc OK
+    }
+
+    const { error } = await sb.from('roommates').insert(payload)
+    if(error){
+      console.error(error)
+      toast("Ajout refusé (RLS).")
+      return
+    }
+
+    $('firstName').value=''
+    $('lastName').value=''
+    $('roomNumber').value=''
+    toast("Colocataire ajouté.")
+    await loadRoommates()
+    await loadTeams()
+  }
+
+  async function deleteRoommate(id){
+    const { error } = await sb.from('roommates').delete().eq('id', id)
+    if(error){
+      console.error(error)
+      toast("Suppression refusée (RLS / FK team_members).")
+      return
+    }
+    toast("Colocataire supprimé.")
+    await loadRoommates()
+    await loadTeams()
+  }
+
+  function roommateOptions(selectedId){
+    const opts = [`<option value="">Ajouter un membre…</option>`]
+      .concat(ROOMMATES.map(r => `<option value="${r.id}" ${r.id===selectedId?'selected':''}>${esc(r.display)}</option>`))
+      .join('')
+    return opts
+  }
+
+  async function loadTeams(){
+    const box = $('teamsList')
+    box.innerHTML = `<div class="empty">Chargement…</div>`
+
+    const { data: teams, error: e1 } = await sb
+      .from('teams')
+      .select('id, name, sort_order, created_at')
+      .eq('household_id', HOUSEHOLD_ID)
+      .order('sort_order', { ascending:true })
+      .order('created_at', { ascending:true })
+
+    if(e1){
+      console.error(e1)
+      box.innerHTML = `<div class="empty">Impossible de charger teams (RLS).</div>`
+      return
+    }
+
+    if(!teams || teams.length===0){
+      box.innerHTML = `<div class="empty">Aucune équipe.</div>`
+      return
+    }
+
+    // Pour afficher les membres d'équipe
+    const { data: members, error: e2 } = await sb
+      .from('team_members')
+      .select('id, team_id, roommate_id, roommates(first_name, last_name)')
+      .eq('household_id', HOUSEHOLD_ID)
+
+    if(e2){
+      console.error(e2)
+      box.innerHTML = `<div class="empty">Impossible de charger team_members (RLS).</div>`
+      return
+    }
+
+    const byTeam = new Map()
+    ;(members || []).forEach(m => {
+      const name = `${m.roommates?.first_name ?? ''} ${m.roommates?.last_name ?? ''}`.trim()
+      if(!byTeam.has(m.team_id)) byTeam.set(m.team_id, [])
+      byTeam.get(m.team_id).push({ id:m.id, roommate_id:m.roommate_id, name })
+    })
+
+    box.innerHTML = teams.map(t => {
+      const list = byTeam.get(t.id) || []
+      const membersLine = list.length ? list.map(x => esc(x.name)).join(' · ') : 'Aucun membre'
+      return `
+        <div class="row" style="align-items:flex-start">
+          <div class="leftCol" style="flex:1;min-width:0">
+            <div class="title">${esc(t.name)}</div>
+            <div class="meta">${membersLine}</div>
+
+            <div class="mini">
+              <select data-team="${t.id}" class="teamAddSelect">
+                ${roommateOptions('')}
+              </select>
+              <button class="link" onclick="addMemberToTeam('${t.id}')">Ajouter</button>
+              <button class="link" onclick="deleteTeam('${t.id}')">Supprimer équipe</button>
+            </div>
+
+            ${list.length ? `
+              <div class="mini" style="margin-top:10px">
+                ${list.map(m => `
+                  <button class="link" onclick="removeMember('${m.id}')">Retirer ${esc(m.name)}</button>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+          <span class="badge warn">TEAM</span>
+        </div>
+      `
+    }).join('')
+  }
+
+  async function createTeam(){
+    const name = $('teamName').value.trim()
+    const sort_order = parseInt($('teamOrder').value || '0', 10)
+    if(!name){ toast("Nom d’équipe obligatoire."); return }
+
+    const { error } = await sb.from('teams').insert({ household_id: HOUSEHOLD_ID, name, sort_order })
+    if(error){
+      console.error(error)
+      toast("Création refusée (RLS).")
+      return
+    }
+
+    $('teamName').value=''
+    $('teamOrder').value='0'
+    toast("Équipe créée.")
+    await loadTeams()
+  }
+
+  async function deleteTeam(id){
+    const { error } = await sb.from('teams').delete().eq('id', id)
+    if(error){
+      console.error(error)
+      toast("Suppression refusée (RLS / FK team_members).")
+      return
+    }
+    toast("Équipe supprimée.")
+    await loadTeams()
+  }
+
+  async function addMemberToTeam(teamId){
+    const sel = document.querySelector(`select[data-team="${teamId}"]`)
+    const roommateId = sel?.value
+    if(!roommateId){ toast("Sélectionnez un colocataire."); return }
+
+    const { error } = await sb.from('team_members').insert({
+      household_id: HOUSEHOLD_ID,
+      team_id: teamId,
+      roommate_id: roommateId
+    })
+
+    if(error){
+      console.error(error)
+      toast("Ajout refusé (RLS / doublon ?).")
+      return
+    }
+
+    toast("Membre ajouté.")
+    sel.value = ''
+    await loadTeams()
+  }
+
+  async function removeMember(teamMemberId){
+    const { error } = await sb.from('team_members').delete().eq('id', teamMemberId)
+    if(error){
+      console.error(error)
+      toast("Suppression refusée (RLS).")
+      return
+    }
+    toast("Membre retiré.")
+    await loadTeams()
+  }
+
+  function enableRealtime(){
+    try{
+      sb.channel('infos-rt')
+        .on('postgres_changes', { event:'*', schema:'public', table:'roommates' }, () => loadRoommates())
+        .on('postgres_changes', { event:'*', schema:'public', table:'teams' }, () => loadTeams())
+        .on('postgres_changes', { event:'*', schema:'public', table:'team_members' }, () => loadTeams())
+        .subscribe()
+    }catch(e){ console.warn(e) }
+  }
+
+  // UI
+  $('addRoommateBtn').addEventListener('click', addRoommate)
+  $('createTeamBtn').addEventListener('click', createTeam)
+  $('refreshBtn').addEventListener('click', async ()=>{ toast("Actualisation…"); await loadRoommates(); await loadTeams(); })
+
+  // Start
+  ;(async function(){
+    const ok = await guard()
+    if(!ok) return
+    await loadHousehold()
+    if(!HOUSEHOLD_ID){ toast("Aucune colocation."); return }
+    await loadRoommates()
+    await loadTeams()
+    enableRealtime()
+  })()
+</script>
+<script>
+    (function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) {
+    console.warn("themeBtn introuvable");
+    return;
+  }
+
+  function applyLabel(){
+    const isLight = document.documentElement.classList.contains('light') || document.body.classList.contains('light');
+    btn.textContent = isLight ? '🌙 Sombre' : '☀️ Clair';
+  }
+
+  // Appliquer le thème sauvegardé au chargement
+  const saved = localStorage.getItem('mycoloc-theme') || 'dark';
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    document.body.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.body.classList.remove('light');
+  }
+  applyLabel();
+
+  // Toggle
+  btn.addEventListener('click', () => {
+    const nowLight = !document.documentElement.classList.contains('light');
+    document.documentElement.classList.toggle('light', nowLight);
+    document.body.classList.toggle('light', nowLight);
+    localStorage.setItem('mycoloc-theme', nowLight ? 'light' : 'dark');
+    applyLabel();
+  });
+})();
+  </script>
+</body>
+</html>

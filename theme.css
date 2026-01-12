@@ -1,0 +1,159 @@
+
+/* ========== THEME (Dark par défaut) ========== */
+:root{
+  --bg:#0b0b0f;
+  --card:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.12);
+  --text:#fff;
+  --muted:#b3b3b3;
+  --accent:#ff2d55;
+  --good:#30d158;
+  --warn:#ffd60a;
+  --bad:#ff453a;
+  --radius:18px;
+  --blur: blur(18px);
+}
+
+
+
+/* ========== LIGHT MODE (Apple Music vibe) ========== */
+body.light{
+  --bg:#f5f5f7;
+  --card:rgba(255,255,255,.78);
+  --border:rgba(0,0,0,.10);
+  --text:#101014;
+  --muted:#5a5a60;
+  --accent:#ff2d55;
+}
+
+body.light{
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255,45,85,.14), transparent 46%),
+    radial-gradient(circle at 92% 85%, rgba(0,122,255,.10), transparent 46%),
+    var(--bg);
+}
+
+/* topbar */
+body.light .topbar{
+  background:linear-gradient(to bottom, rgba(245,245,247,.92), rgba(245,245,247,.62));
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
+
+/* cards + rows */
+body.light .card{
+  box-shadow: 0 18px 50px rgba(0,0,0,.10);
+}
+
+body.light .row{
+  background:rgba(0,0,0,.03);
+  border:1px solid rgba(0,0,0,.06);
+}
+
+body.light .empty{
+  border:1px dashed rgba(0,0,0,.14);
+  background: rgba(0,0,0,.02);
+}
+
+/* inputs */
+body.light input,
+body.light textarea,
+body.light select{
+  background:rgba(0,0,0,.04);
+  border:1px solid rgba(0,0,0,.10);
+  color: var(--text);
+}
+
+body.light input:focus,
+body.light textarea:focus,
+body.light select:focus{
+  border-color: var(--accent);
+  background: rgba(0,0,0,.06);
+}
+
+/* buttons */
+body.light .btn{
+  border:1px solid rgba(0,0,0,.10);
+  color: var(--text);
+}
+body.light .btn:hover{ opacity:.95; }
+
+/* code chips */
+body.light code{
+  background: rgba(0,0,0,.06);
+  border:1px solid rgba(0,0,0,.10);
+  color:#101014;
+}
+
+/* dropdown menu (si présent) */
+body.light .navMenu{
+  background: rgba(255,255,255,.92);
+  border:1px solid rgba(0,0,0,.10);
+}
+body.light .navItem{
+  background: rgba(0,0,0,.03);
+  color: var(--text);
+}
+body.light .navItem:hover{
+  background: rgba(0,0,0,.05);
+}
+body.light .navSep{
+  background: rgba(0,0,0,.08);
+}
+
+
+
+/* ===== Mobile menu (bottom sheet) ===== */
+@media (max-width: 640px){
+  .topbar{
+    padding: 12px 12px;
+  }
+
+  .topbar .right{
+    gap: 8px;
+  }
+
+  /* Option: réduire certains boutons si vous avez trop d’actions */
+  .topbar .right .btn{
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  /* Menu en bottom sheet */
+  .navMenu{
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    top: auto !important;
+
+    width: auto !important;
+    min-width: 0 !important;
+    max-height: 70vh;
+
+    overflow: auto;
+    border-radius: 22px;
+    padding: 12px;
+  }
+
+  .navItem{
+    padding: 12px 12px;
+    font-size: 14px;
+  }
+
+  .navSep{
+    margin: 12px 6px;
+  }
+
+  /* Overlay sombre derrière le sheet */
+  .menuOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    backdrop-filter: blur(4px);
+    display: none;
+    z-index: 998;
+  }
+  .menuOverlay.open{ display:block; }
+
+  .navMenu{ z-index: 999; }
+}

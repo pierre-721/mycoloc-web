@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MyColoc — Accueil</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="theme.css" rel="stylesheet">
+    <link href="style-light.css" rel="stylesheet">
+  <script type="text/javascript" src="script-theme.js"></script>
+
+  <style>
+    :root{
+      --bg-main:#0b0b0f;
+      --bg-card:rgba(255,255,255,.06);
+      --border:rgba(255,255,255,.12);
+      --text:#fff;
+      --muted:#b3b3b3;
+      --accent:#ff2d55;
+      --good:#30d158;
+      --warn:#ffd60a;
+      --bad:#ff453a;
+      --radius:18px;
+      --blur: blur(18px);
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}
+    body{
+      margin:0; min-height:100vh; color:var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(255,45,85,.12), transparent 45%),
+        radial-gradient(circle at 90% 85%, rgba(90,200,250,.12), transparent 45%),
+        var(--bg-main);
+    }
+    .wrap{max-width:1120px; margin:0 auto; padding:22px 18px 40px}
+    .topbar{
+      position:relative; top:25px; z-index:10;
+      backdrop-filter: var(--blur);
+      background: linear-gradient(to bottom, rgba(11,11,15,.86), rgba(11,11,15,.55));
+      border-bottom:1px solid rgba(255,255,255,.06);
+      padding:14px 20px 12px;
+      margin: -22px auto 18px;
+    }
+    .topbar-inner{
+      max-width:1120px; margin:0 auto; padding:0 18px;
+      display:flow; align-items:center; justify-content:space-between; gap:14px;
+    }
+    .brand{display:flex; flex-direction:column; gap:3px; letter-spacing:-.4px}
+    .brand h1{margin:0; font-size:20px; font-weight:700}
+    .brand p{margin:0; font-size:12px; color:var(--muted)}
+    .actions{display:flex; gap:10px; align-items:center}
+    .chip{
+      display:inline-flex; align-items:center;
+      padding:10px 12px; border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      font-size:13px; color:var(--muted);
+      max-width: 320px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .btn{
+      border:none; cursor:pointer;
+      padding:10px 12px; border-radius:999px;
+      font-weight:600; font-size:13px;
+      color:#fff; background: var(--accent);
+      transition: transform .12s ease, opacity .12s ease;
+    }
+    .btn:hover{opacity:.92; transform: translateY(-1px)}
+    .btn.secondary{background:transparent; border:1px solid var(--border); color:var(--text)}
+
+    .grid{display:grid; grid-template-columns: 1.15fr .85fr; gap:14px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+    .card{
+      background: var(--bg-card);
+      backdrop-filter: var(--blur);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 18px 55px rgba(0,0,0,.45);
+      overflow:hidden;
+    }
+    .card-h{
+      padding:16px 16px 12px;
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .card-h h2{margin:0; font-size:14px; font-weight:700; letter-spacing:-.2px}
+    .card-h .sub{margin-top:4px; font-size:12px; color:var(--muted)}
+    .card-b{padding:14px 16px 16px}
+
+    .list{display:flex; flex-direction:column; gap:10px}
+    .row{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:12px 12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+    }
+    .row:hover{background: rgba(255,255,255,.08)}
+    .left{display:flex; flex-direction:column; gap:3px; min-width:0}
+    .title{font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .meta{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .badge{
+      flex:0 0 auto;
+      font-size:11px; font-weight:700;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+    }
+    .badge.good{border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.12)}
+    .badge.warn{border-color: rgba(255,214,10,.25); background: rgba(255,214,10,.12)}
+    .badge.bad{border-color: rgba(255,69,58,.25); background: rgba(255,69,58,.12)}
+
+    .empty{
+      padding:14px 12px;
+      border-radius: 14px;
+      border:1px dashed rgba(255,255,255,.16);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+    .divider{height:1px; background: rgba(255,255,255,.06); margin:12px 0}
+    .cta-grid{display:grid; gap:10px; grid-template-columns:1fr 1fr}
+    @media (max-width:520px){.cta-grid{grid-template-columns:1fr}}
+    .input{
+      width:100%;
+      padding:12px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 13px;
+    }
+    .input:focus{outline:none; border-color: var(--accent); background: rgba(255,255,255,.12)}
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background: rgba(20,20,25,.78);
+      backdrop-filter: var(--blur);
+      border:1px solid rgba(255,255,255,.12);
+      padding:12px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5);
+      display:none;
+      max-width: calc(100vw - 36px);
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+
+   /* =========================
+   MENU DROPDOWN (DESKTOP)
+   ========================= */
+.navDropdown{ position:relative; display:inline-block; }
+
+.navMenu{
+  position:absolute;
+  right:0;
+  top:calc(100% + 10px);
+  min-width: 240px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(20,20,25,.86);
+  backdrop-filter: var(--blur);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 18px 55px rgba(0,0,0,.55);
+  display:none;
+  z-index: 9999;
+}
+
+.navMenu.open{ display:block; }
+
+/* Les items (forcé) */
+.navMenu .navItem{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+
+  padding: 12px 12px;
+  border-radius: 14px;
+
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+
+  cursor:pointer;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.navMenu .navItem:hover{ background: rgba(255,255,255,.10); }
+
+.navMenu .navSep{
+  height:1px;
+  background: rgba(255,255,255,.10);
+  margin: 10px 6px;
+}
+
+/* Overlay */
+.menuOverlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(4px);
+  z-index: 9998;
+}
+.menuOverlay.open{ display:block; }
+
+/* =========================
+   MOBILE (BOTTOM SHEET)
+   ========================= */
+@media (max-width: 640px){
+
+  /* On force le menu en sheet */
+  .navMenu{
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    top: auto !important;
+
+    min-width: 0 !important;
+    width: auto !important;
+
+    max-height: 72vh;
+    overflow:auto;
+
+    border-radius: 22px;
+    padding: 12px;
+
+    z-index: 10000 !important;
+
+    /* animation */
+    transform: translateY(14px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform .18s ease, opacity .18s ease;
+  }
+
+  .navMenu.open{
+    opacity: 1;
+    transform: translateY(400px);
+    pointer-events: auto;
+  }
+
+  /* petit "handle" Apple Music */
+  .navMenu::before{
+    content:"";
+    display:block;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    margin: 6px auto 10px;
+    background: rgba(255,255,255,.22);
+  }
+
+  /* Items plus confort */
+  .navMenu .navItem{
+    font-size: 15px;
+    padding: 14px 12px;
+  }
+
+  .menuOverlay{ z-index: 9999; }
+}
+
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>MyColoc</h1>
+        <p id="subtitle">Chargement…</p>
+      </div>
+
+      <div class="actions">
+        <div class="chip" id="user-chip" title="Compte">
+          <span id="user-email">—</span>
+        </div>
+        <button class="btn secondary" id="refresh-btn" type="button">Actualiser</button>
+        <button class="btn" id="themeBtn">☀️ Clair</button>
+        <div class="navDropdown" id="navDropdown">
+  <button class="btn" id="navBtn" type="button">Menu ▾</button>
+
+  <div class="navMenu" id="navMenu" aria-hidden="true">
+    <button class="navItem" data-href="home.html">🏠 Accueil</button>
+    <div class="navSep"></div>
+    <button class="navItem" data-href="groceries.html">🛒 Courses</button>
+    <button class="navItem" data-href="events.html">📅 Évènements</button>
+    <button class="navItem" data-href="tasks.html">🧹 Tâches</button>
+    <button class="navItem" data-href="news.html">📰 Actus</button>
+    <div class="navSep"></div>
+    <button class="navItem" data-href="members-teams.html">👥 Membres & Teams</button>
+    <button class="navItem" data-href="infos-coloc.html">🏠 Infos Coloc</button>
+    <button class="navItem" data-href="household.html">⚙️ Colocation</button>
+  </div>
+</div>
+
+
+        <button class="btn" id="logout-btn" type="button">Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- LEFT -->
+      <div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <h2>Accueil</h2>
+              <div class="sub" id="household-sub">—</div>
+            </div>
+            <span class="badge" id="household-badge">—</span>
+          </div>
+          <div class="card-b">
+            <div id="household-cta" style="display:none;">
+              <div class="empty">
+                Vous n’êtes rattaché à aucune colocation.
+                <div class="divider"></div>
+
+                <div class="cta-grid">
+                  <div class="card" style="box-shadow:none; background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.10)">
+                    <div class="card-b">
+                      <div style="font-weight:700; font-size:13px; margin-bottom:8px">Créer une colocation</div>
+                      <input class="input" id="new-household-name" placeholder="Nom (ex: Coloc Bellecour)" />
+                      <div style="height:10px"></div>
+                      <button class="btn" id="create-household-btn" type="button" style="width:100%">Créer</button>
+                    </div>
+                  </div>
+
+                  <div class="card" style="box-shadow:none; background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.10)">
+                    <div class="card-b">
+                      <div style="font-weight:700; font-size:13px; margin-bottom:8px">Rejoindre avec un code</div>
+                      <input class="input" id="join-code" placeholder="Code (ex: 8F2KQZ)" />
+                      <div style="height:10px"></div>
+                      <button class="btn secondary" id="join-household-btn" type="button" style="width:100%">Rejoindre</button>
+                      <div style="color:var(--muted); font-size:12px; margin-top:10px">
+                        Utilise la table <span style="color:#fff">household_join_codes</span>.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div id="household-summary" style="display:none;">
+              <div class="list" id="summary-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <h2>Courses</h2>
+              <div class="sub">Articles non cochés (grocery_items)</div>
+            </div>
+            <button class="btn secondary" type="button" onclick="window.location.href='groceries.html'">Ouvrir</button>
+          </div>
+          <div class="card-b">
+            <div class="list" id="groceries-list"><div class="empty">Chargement…</div></div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <h2>Évènements</h2>
+              <div class="sub">Prochains rendez-vous (events.starts_at)</div>
+            </div>
+            <button class="btn secondary" type="button" onclick="window.location.href='events.html'">Ouvrir</button>
+          </div>
+          <div class="card-b">
+            <div class="list" id="events-list"><div class="empty">Chargement…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <h2>Tâches</h2>
+              <div class="sub">Semaine courante (task_assignments + task_templates)</div>
+            </div>
+            <button class="btn secondary" type="button" onclick="window.location.href='tasks.html'">Ouvrir</button>
+          </div>
+          <div class="card-b">
+            <div class="list" id="tasks-list"><div class="empty">Chargement…</div></div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <h2>Colocataires</h2>
+              <div class="sub">roommates</div>
+            </div>
+            <button class="btn secondary" type="button" onclick="window.location.href='members-teams.html'">Colocataires</button>
+          </div>
+          <div class="card-b">
+            <div class="list" id="roommates-list"><div class="empty">Chargement…</div></div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="card">
+          <div class="card-h">
+            <div>
+              <h2>Temps réel</h2>
+              <div class="sub">Realtime (optionnel)</div>
+            </div>
+            <span class="badge good" id="rt-badge">Actif</span>
+          </div>
+          <div class="card-b">
+            <div class="empty">
+              Les listes peuvent se mettre à jour automatiquement si Realtime est activé sur vos tables.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  (function () {
+    try {
+      const t = localStorage.getItem('mycoloc-theme');
+      if (t === 'light') document.documentElement.classList.add('light');
+    } catch (e) {}
+  })();
+  </script>
+
+  <script>
+    /***********************
+     * 🔧 CONFIG SUPABASE  *
+     ***********************/
+    const sbc = window.supabase.createClient(
+      'https://thcsbtvbybhmmiabovjc.supabase.co',
+      'sb_publishable_zo99H00Em3C_cpF4hV3c4A_inn52lP2'
+    )
+
+    const $ = (id) => document.getElementById(id)
+
+    function toast(message){
+      const t = $('toast')
+      t.textContent = message
+      t.style.display = 'block'
+      clearTimeout(window.__toastTimer)
+      window.__toastTimer = setTimeout(() => t.style.display = 'none', 3200)
+    }
+
+    function escapeHtml(str){
+      return String(str ?? '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;")
+    }
+
+    function setEmpty(listEl, text){
+      listEl.innerHTML = `<div class="empty">${escapeHtml(text)}</div>`
+    }
+
+    function rowHTML({title, meta, badgeText, badgeKind}){
+      const kind = badgeKind ? ` ${badgeKind}` : ''
+      const badge = badgeText ? `<span class="badge${kind}">${escapeHtml(badgeText)}</span>` : ''
+      return `
+        <div class="row">
+          <div class="left">
+            <div class="title">${escapeHtml(title)}</div>
+            <div class="meta">${escapeHtml(meta || '')}</div>
+          </div>
+          ${badge}
+        </div>
+      `
+    }
+
+    function fmtDateTime(iso){
+      if(!iso) return '—'
+      const d = new Date(iso)
+      return d.toLocaleString('fr-FR', { weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+    }
+
+    function getWeekStartMonday(date = new Date()){
+      // Lundi 00:00:00 local
+      const d = new Date(date)
+      const day = (d.getDay() + 6) % 7 // 0 = lundi
+      d.setHours(0,0,0,0)
+      d.setDate(d.getDate() - day)
+      // On retourne au format YYYY-MM-DD pour le champ "week_start" (type date)
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth()+1).padStart(2,'0')
+      const dd = String(d.getDate()).padStart(2,'0')
+      return `${yyyy}-${mm}-${dd}`
+    }
+
+    /***********************
+     * 🔐 Auth guard        *
+     ***********************/
+    async function guard(){
+      const { data: { session } } = await sbc.auth.getSession()
+      if (!session){
+        window.location.href = 'index.html'
+        return null
+      }
+      return session
+    }
+
+    /***********************
+     * 🏠 Household current  *
+     * Tables: household_members, households
+     ***********************/
+    async function getCurrentHousehold(userId){
+      const { data, error } = await sbc
+        .from('household_members')
+        .select('household_id, role, households(name)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+
+      if (error) throw error
+      if (!data || data.length === 0) return null
+
+      return {
+        household_id: data[0].household_id,
+        role: data[0].role ?? 'member',
+        household_name: data[0].households?.name ?? 'Ma colocation'
+      }
+    }
+
+    /***********************
+     * 📊 Loaders           *
+     ***********************/
+    async function loadGroceries(householdId){
+      const list = $('groceries-list')
+      setEmpty(list, 'Chargement…')
+
+      // Non cochés
+      const { data, error } = await sbc
+        .from('grocery_items')
+        .select('id, name, quantity, is_common, scope, status, is_checked, purchased_at, created_at')
+        .eq('household_id', householdId)
+        .eq('is_checked', false)
+        .order('created_at', { ascending: false })
+        .limit(6)
+
+      if (error){
+        console.error(error)
+        setEmpty(list, "Impossible de charger les courses (grocery_items). Vérifiez RLS.")
+        return
+      }
+      if (!data || data.length === 0){
+        setEmpty(list, "Rien à acheter pour l’instant.")
+        return
+      }
+
+      list.innerHTML = data.map(g => {
+        const scope = (g.scope || (g.is_common ? 'common' : 'personal'))
+        const meta = scope === 'common' ? 'Commun' : 'Perso'
+        const badge = (g.status || 'planned').toUpperCase()
+        const badgeKind = badge === 'PLANNED' ? 'warn' : 'good'
+        return rowHTML({
+          title: `${g.name}${g.quantity ? ` · x${g.quantity}` : ''}`,
+          meta,
+          badgeText: badge,
+          badgeKind
+        })
+      }).join('')
+    }
+
+    async function loadEvents(householdId){
+      const list = $('events-list')
+      setEmpty(list, 'Chargement…')
+
+      const nowIso = new Date().toISOString()
+
+      const { data, error } = await sbc
+        .from('events')
+        .select('id, title, starts_at, location')
+        .eq('household_id', householdId)
+        .gte('starts_at', nowIso)
+        .order('starts_at', { ascending: true })
+        .limit(6)
+
+      if (error){
+        console.error(error)
+        setEmpty(list, "Impossible de charger les évènements (events). Vérifiez RLS.")
+        return
+      }
+      if (!data || data.length === 0){
+        setEmpty(list, "Aucun évènement à venir.")
+        return
+      }
+
+      list.innerHTML = data.map(ev => rowHTML({
+        title: ev.title,
+        meta: `${fmtDateTime(ev.starts_at)}${ev.location ? ' · ' + ev.location : ''}`,
+        badgeText: 'À venir',
+        badgeKind: 'good'
+      })).join('')
+    }
+
+    async function loadTasks(householdId){
+      const list = $('tasks-list')
+      setEmpty(list, 'Chargement…')
+
+      const weekStart = getWeekStartMonday(new Date())
+
+      // task_assignments + jointure task_templates pour récupérer le titre
+      const { data, error } = await sbc
+        .from('task_assignments')
+        .select('id, is_done, week_start, updated_at, task_templates(title, sort_order), assigned_roommate_id')
+        .eq('household_id', householdId)
+        .eq('week_start', weekStart)
+        .eq('is_done', false)
+        .order('week_start', { ascending: false })
+
+      if (error){
+        console.error(error)
+        setEmpty(list, "Impossible de charger les tâches (task_assignments). Vérifiez RLS et la relation avec task_templates.")
+        return
+      }
+      if (!data || data.length === 0){
+        setEmpty(list, "Aucune tâche en attente cette semaine.")
+        return
+      }
+
+      // tri par sort_order si présent
+      data.sort((a,b) => (a.task_templates?.sort_order ?? 0) - (b.task_templates?.sort_order ?? 0))
+
+      list.innerHTML = data.slice(0,7).map(t => rowHTML({
+        title: t.task_templates?.title ?? 'Tâche',
+        meta: `Semaine du ${weekStart}`,
+        badgeText: 'TODO',
+        badgeKind: 'warn'
+      })).join('')
+    }
+
+    async function loadRoommates(householdId){
+      const list = $('roommates-list')
+      setEmpty(list, 'Chargement…')
+
+      const { data, error } = await sbc
+        .from('roommates')
+        .select('id, first_name, last_name, room_number, created_at')
+        .eq('household_id', householdId)
+        .order('created_at', { ascending: true })
+        .limit(10)
+
+      if (error){
+        console.error(error)
+        setEmpty(list, "Impossible de charger les colocataires (roommates). Vérifiez RLS.")
+        return
+      }
+      if (!data || data.length === 0){
+        setEmpty(list, "Aucun colocataire trouvé.")
+        return
+      }
+
+      list.innerHTML = data.map(r => rowHTML({
+        title: `${r.first_name} ${r.last_name}`.trim(),
+        meta: r.room_number ? `Chambre ${r.room_number}` : 'Membre',
+        badgeText: 'Actif',
+        badgeKind: 'good'
+      })).join('')
+    }
+
+    async function loadSummary(householdId){
+      const list = $('summary-list')
+      list.innerHTML = ''
+
+      const weekStart = getWeekStartMonday(new Date())
+      const nowIso = new Date().toISOString()
+
+      const [gCount, tCount, eCount] = await Promise.all([
+        sbc.from('grocery_items').select('id', { count:'exact', head:true }).eq('household_id', householdId).eq('is_checked', false),
+        sbc.from('task_assignments').select('id', { count:'exact', head:true }).eq('household_id', householdId).eq('week_start', weekStart).eq('is_done', false),
+        sbc.from('events').select('id', { count:'exact', head:true }).eq('household_id', householdId).gte('starts_at', nowIso),
+      ])
+
+      const safeCount = (resp) => (resp && !resp.error ? (resp.count ?? 0) : null)
+
+      const a = safeCount(gCount)
+      const b = safeCount(tCount)
+      const c = safeCount(eCount)
+
+      list.innerHTML = [
+        rowHTML({ title:'Courses', meta:'Articles à acheter', badgeText: a === null ? '—' : String(a), badgeKind: (a ?? 0) > 0 ? 'warn' : 'good' }),
+        rowHTML({ title:'Tâches', meta:`Semaine du ${weekStart}`, badgeText: b === null ? '—' : String(b), badgeKind: (b ?? 0) > 0 ? 'warn' : 'good' }),
+        rowHTML({ title:'Évènements', meta:'À venir', badgeText: c === null ? '—' : String(c), badgeKind: (c ?? 0) > 0 ? 'good' : '' }),
+      ].join('')
+    }
+
+    /***********************
+     * ➕ Create / Join     *
+     ***********************/
+    async function createHousehold(userId){
+      const name = $('new-household-name').value.trim()
+      if (!name){ toast("Veuillez saisir un nom de colocation."); return }
+
+      // households.created_by est NOT NULL sans default -> il faut le fournir
+      const { data: h, error: e1 } = await sbc
+        .from('households')
+        .insert({ name, created_by: userId })
+        .select('id, name')
+        .single()
+
+      if (e1){ console.error(e1); toast("Création impossible (households). Vérifiez RLS."); return }
+
+      const { error: e2 } = await sbc
+        .from('household_members')
+        .insert({ user_id: userId, household_id: h.id, role: 'owner' })
+
+      if (e2){ console.error(e2); toast("Colocation créée mais rattachement membre en erreur (RLS)."); return }
+
+      toast("Colocation créée.")
+      await bootstrap()
+    }
+
+    async function joinHouseholdWithCode(userId){
+      const code = $('join-code').value.trim()
+      if (!code){ toast("Veuillez saisir un code."); return }
+      const { data, error } = await sbc.rpc('join_household_with_code', { p_code: code })
+
+  if(error){
+    console.error(error)
+    if(String(error.message || '').includes('INVALID_CODE')){
+      toast("Code invalide.")
+    } else {
+      toast("Impossible de rejoindre (RLS / config).")
+    }
+    return
+  }
+
+  toast("Colocation rejointe.")
+  await refreshAll()
+}
+
+    /***********************
+     * 🔁 Realtime (option) *
+     ***********************/
+    let rtChannel = null
+    function enableRealtime(){
+      try{
+        if (rtChannel) sbc.removeChannel(rtChannel)
+        rtChannel = sbc
+          .channel('mycoloc-home')
+          .on('postgres_changes', { event:'*', schema:'public', table:'grocery_items' }, () => bootstrapListsOnly())
+          .on('postgres_changes', { event:'*', schema:'public', table:'task_assignments' }, () => bootstrapListsOnly())
+          .on('postgres_changes', { event:'*', schema:'public', table:'events' }, () => bootstrapListsOnly())
+          .subscribe()
+
+        $('rt-badge').textContent = 'Actif'
+        $('rt-badge').className = 'badge good'
+      }catch(e){
+        console.warn(e)
+        $('rt-badge').textContent = 'Inactif'
+        $('rt-badge').className = 'badge warn'
+      }
+    }
+
+    /***********************
+     * 🚀 Bootstrap         *
+     ***********************/
+    let CURRENT = { session:null, household:null }
+
+    async function bootstrapListsOnly(){
+      if (!CURRENT.household?.household_id) return
+      await Promise.allSettled([
+        loadSummary(CURRENT.household.household_id),
+        loadGroceries(CURRENT.household.household_id),
+        loadEvents(CURRENT.household.household_id),
+        loadTasks(CURRENT.household.household_id),
+        loadRoommates(CURRENT.household.household_id),
+      ])
+    }
+
+    async function bootstrap(){
+      const session = await guard()
+      if (!session) return
+
+      CURRENT.session = session
+      $('user-email').textContent = session.user.email || 'Compte'
+      $('subtitle').textContent = 'Synchronisé avec Supabase'
+
+      let householdInfo = null
+      try{
+        householdInfo = await getCurrentHousehold(session.user.id)
+      }catch(e){ console.error(e) }
+
+      CURRENT.household = householdInfo
+
+      if (!householdInfo){
+        $('household-sub').textContent = "Aucune colocation"
+        $('household-badge').textContent = "À configurer"
+        $('household-badge').className = 'badge warn'
+        $('household-cta').style.display = 'block'
+        $('household-summary').style.display = 'none'
+
+        setEmpty($('groceries-list'), "Rejoignez une colocation pour afficher les courses.")
+        setEmpty($('events-list'), "Rejoignez une colocation pour afficher les évènements.")
+        setEmpty($('tasks-list'), "Rejoignez une colocation pour afficher les tâches.")
+        setEmpty($('roommates-list'), "Rejoignez une colocation pour afficher les colocataires.")
+        return
+      }
+
+      $('household-cta').style.display = 'none'
+      $('household-summary').style.display = 'block'
+      $('household-sub').textContent = householdInfo.household_name
+      $('household-badge').textContent = householdInfo.role === 'owner' ? 'Owner' : 'Membre'
+      $('household-badge').className = 'badge good'
+
+      await bootstrapListsOnly()
+      enableRealtime()
+    }
+
+    /***********************
+     * 🎛️ Events            *
+     ***********************/
+    $('logout-btn').addEventListener('click', async () => {
+      await sbc.auth.signOut()
+      window.location.href = 'index.html'
+    })
+
+    $('refresh-btn').addEventListener('click', async () => {
+      toast("Actualisation…")
+      await bootstrap()
+    })
+
+    $('create-household-btn').addEventListener('click', async () => {
+      const session = CURRENT.session || await guard()
+      if (!session) return
+      await createHousehold(session.user.id)
+    })
+
+    $('join-household-btn').addEventListener('click', async () => {
+      const session = CURRENT.session || await guard()
+      if (!session) return
+      await joinHouseholdWithCode(session.user.id)
+    })
+    bootstrap()
+  </script>
+
+  <script>
+    (function(){
+  const navBtn = document.getElementById('navBtn')
+  const navMenu = document.getElementById('navMenu')
+  const wrap = document.getElementById('navDropdown')
+
+  if(!navBtn || !navMenu || !wrap) return
+
+  function openMenu(){
+    navMenu.classList.add('open')
+    navMenu.setAttribute('aria-hidden', 'false')
+  }
+  function closeMenu(){
+    navMenu.classList.remove('open')
+    navMenu.setAttribute('aria-hidden', 'true')
+  }
+  function toggleMenu(){
+    navMenu.classList.contains('open') ? closeMenu() : openMenu()
+  }
+
+  navBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    toggleMenu()
+  })
+
+  // Click sur un item => navigation
+  navMenu.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-href]')
+    if(!btn) return
+    const href = btn.getAttribute('data-href')
+    if(href) location.href = href
+  })
+
+  // Cliquer en dehors ferme
+  document.addEventListener('click', (e) => {
+    if(!wrap.contains(e.target)) closeMenu()
+  })
+
+  // ESC ferme
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeMenu()
+  })
+})()
+  </script>
+
+  <script>
+    (function(){
+  const btn = document.getElementById('themeBtn');
+  if(!btn) {
+    console.warn("themeBtn introuvable");
+    return;
+  }
+
+  function applyLabel(){
+    const isLight = document.documentElement.classList.contains('light') || document.body.classList.contains('light');
+    btn.textContent = isLight ? '🌙 Sombre' : '☀️ Clair';
+  }
+
+  // Appliquer le thème sauvegardé au chargement
+  const saved = localStorage.getItem('mycoloc-theme') || 'dark';
+  if(saved === 'light'){
+    document.documentElement.classList.add('light');
+    document.body.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+    document.body.classList.remove('light');
+  }
+  applyLabel();
+
+  // Toggle
+  btn.addEventListener('click', () => {
+    const nowLight = !document.documentElement.classList.contains('light');
+    document.documentElement.classList.toggle('light', nowLight);
+    document.body.classList.toggle('light', nowLight);
+    localStorage.setItem('mycoloc-theme', nowLight ? 'light' : 'dark');
+    applyLabel();
+  });
+})();
+
+  </script>
+  <div class="menuOverlay" id="menuOverlay"></div>
+
+</body>
+</html>
